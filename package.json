@@ -1,0 +1,29 @@
+{
+  "name": "ai-powered-qa-automation",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vol-vladimir/ai-powered-qa-automation.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/vol-vladimir/ai-powered-qa-automation/issues"
+  },
+  "homepage": "https://github.com/vol-vladimir/ai-powered-qa-automation#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "cypress": "^15.14.2",
+    "typescript": "^6.0.3"
+  }
+}
