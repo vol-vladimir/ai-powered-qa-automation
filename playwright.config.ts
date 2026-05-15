@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
@@ -8,6 +9,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
+    baseURL: process.env.DIDAXIS_URL,
     trace: "on-first-retry",
   },
   projects: [
