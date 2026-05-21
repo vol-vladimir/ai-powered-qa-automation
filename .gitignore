@@ -1,4 +1,6 @@
 .env
+.playwright-mcp/
+programs-page.yml
 node_modules/
 /test-results/
 /playwright-report/
