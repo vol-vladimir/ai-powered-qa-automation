@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 
 const PROGRAM_NAME_SEED = "Web Development 2026";
 const PROGRAM_DESC_SEED =
@@ -27,22 +27,42 @@ async function loginAsAdmin(page: Page) {
   });
 }
 
-async function ensureSeedProgramExists(page: Page) {
-  const rows = page
-    .getByRole("row")
-    .filter({ hasText: PROGRAM_NAME_SEED });
-  if ((await rows.count()) > 0) {
-    return;
-  }
-
-  await page.getByRole("button", { name: "New Program" }).click();
-  await page.getByLabel("Program Name").fill(PROGRAM_NAME_SEED);
-  await page.getByLabel("Description").fill(PROGRAM_DESC_SEED);
+async function createProgram(page: Page, name: string, description: string) {
+  await page.getByRole("button", { name: /New Program/i }).click();
+  await page.getByLabel("Program Name").fill(name);
+  await page.getByLabel("Description").fill(description);
   await page.getByRole("button", { name: "Create" }).click();
   await expect(page.getByRole("dialog")).toBeHidden({ timeout: 20_000 });
-  await expect(
-    page.getByRole("row").filter({ hasText: PROGRAM_NAME_SEED }).first(),
-  ).toBeVisible();
+  await expect(programRow(page, name)).toBeVisible();
+}
+
+function programRow(page: Page, programName: string) {
+  return page
+    .getByRole("row")
+    .filter({ has: page.getByText(programName, { exact: true }) })
+    .first();
+}
+
+async function ensureSeedProgramExists(page: Page) {
+  if ((await programRow(page, PROGRAM_NAME_SEED).count()) > 0) {
+    return;
+  }
+  await createProgram(page, PROGRAM_NAME_SEED, PROGRAM_DESC_SEED);
+}
+
+async function openEditModal(page: Page, programName: string) {
+  const row = programRow(page, programName);
+  await expect(row).toBeVisible();
+  await row.getByRole("button", { name: "✏️" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
+
+function nameFieldInDialog(dialog: Locator) {
+  return dialog
+    .getByLabel("Program Name")
+    .or(dialog.getByLabel(/^name$/i));
 }
 
 test.describe("Didaxis Studio — programs", () => {
@@ -59,11 +79,7 @@ test.describe("Didaxis Studio — programs", () => {
     const name = `E2E Program ${suffix}`;
     const description = `E2E cohort track ${suffix}`;
 
-    await page.getByRole("button", { name: "New Program" }).click();
-    await page.getByLabel("Program Name").fill(name);
-    await page.getByLabel("Description").fill(description);
-    await page.getByRole("button", { name: "Create" }).click();
-    await expect(page.getByRole("dialog")).toBeHidden({ timeout: 20_000 });
+    await createProgram(page, name, description);
 
     await expect(page.getByText(name)).toBeVisible();
     await expect(page.getByText(description)).toBeVisible();
@@ -74,29 +90,35 @@ test.describe("Didaxis Studio — programs", () => {
   }) => {
     await ensureSeedProgramExists(page);
 
-    const row = page
-      .getByRole("row")
-      .filter({ hasText: PROGRAM_NAME_SEED })
-      .first();
-    await expect(row).toBeVisible();
+    const dialog = await openEditModal(page, PROGRAM_NAME_SEED);
 
-    const editControl = row
-      .getByRole("button", { name: /edit/i })
-      .or(row.getByLabel(/edit/i))
-      .or(row.locator('[aria-label="Edit"]'))
-      .first();
-    await editControl.click();
-
-    const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible();
-
-    const nameField = dialog
-      .getByLabel("Program Name")
-      .or(dialog.getByLabel(/^name$/i));
+    const nameField = nameFieldInDialog(dialog);
     await expect(nameField).toBeVisible();
     await expect(nameField).toHaveValue(PROGRAM_NAME_SEED);
 
     const descField = dialog.getByLabel("Description");
     await expect(descField).toHaveValue(PROGRAM_DESC_SEED);
+  });
+
+  test("TC-002: program name update is saved and shown immediately in list", async ({
+    page,
+  }) => {
+    const suffix = Date.now();
+    const programName = `Web Development 2026 ${suffix}`;
+    const updatedName = `Web Development 2026 - Updated ${suffix}`;
+    const description = `Full-stack web development track for 2026 cohort ${suffix}`;
+
+    await createProgram(page, programName, description);
+
+    const dialog = await openEditModal(page, programName);
+    const nameField = nameFieldInDialog(dialog);
+    await nameField.fill(updatedName);
+    await dialog.getByRole("button", { name: "Save" }).click();
+
+    await expect(dialog).toBeHidden({ timeout: 20_000 });
+    await expect(page.getByText(updatedName)).toBeVisible();
+    await expect(
+      page.getByText(programName, { exact: true }),
+    ).toHaveCount(0);
   });
 });
