@@ -22,7 +22,7 @@ export function programsTable(page: Page) {
   return page.getByRole("table");
 }
 
-function programNameParagraph(page: Page, programName: string) {
+export function programNameParagraph(page: Page, programName: string) {
   return page
     .getByRole("paragraph")
     .filter({ hasText: new RegExp(`^${escapeRegExp(programName)}$`) });
@@ -90,6 +90,88 @@ export function focusAreasFieldInDialog(dialog: Locator) {
 
 export function saveButtonInDialog(dialog: Locator) {
   return dialog.getByRole("button", { name: "Save" });
+}
+
+export function newProgramDialog(page: Page) {
+  return page.getByRole("dialog", { name: "New Program" });
+}
+
+export function createButtonInDialog(dialog: Locator) {
+  return dialog.getByRole("button", { name: "Create" });
+}
+
+export async function openNewProgramModal(page: Page) {
+  await page.getByRole("button", { name: "+ New Program" }).click();
+  const dialog = newProgramDialog(page);
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
+
+export async function fillNewProgramForm(
+  dialog: Locator,
+  name: string,
+  description: string,
+) {
+  await nameFieldInDialog(dialog).fill(name);
+  await descriptionFieldInDialog(dialog).fill(description);
+}
+
+export async function submitNewProgram(dialog: Locator) {
+  await createButtonInDialog(dialog).click();
+}
+
+export async function expectCreateModalClosed(dialog: Locator) {
+  await expect(dialog).toBeHidden({ timeout: 20_000 });
+}
+
+export async function expectCreateBlocked(dialog: Locator, page: Page) {
+  const create = createButtonInDialog(dialog);
+  if (await create.isDisabled()) {
+    await expect(dialog).toBeVisible();
+    return;
+  }
+  await create.click();
+  await expect(dialog).toBeVisible({ timeout: 10_000 });
+  await expect(newProgramDialog(page)).toBeVisible();
+}
+
+export async function expectDuplicateCreateRejected(
+  page: Page,
+  dialog: Locator,
+  existingProgramName: string,
+  attemptedName: string,
+) {
+  await fillNewProgramForm(
+    dialog,
+    attemptedName,
+    "Duplicate name attempt — should be rejected",
+  );
+  await submitNewProgram(dialog);
+  await page.waitForTimeout(1500);
+
+  const dialogStillOpen = await dialog.isVisible().catch(() => false);
+  expect(
+    dialogStillOpen,
+    "DS-3 AC: New Program modal must stay open when duplicate Program Name is submitted",
+  ).toBe(true);
+
+  const trimmedAttempt = attemptedName.trim();
+  const existingCount = await countProgramRows(page, existingProgramName);
+  expect(
+    existingCount,
+    `Only one program row should exist for "${existingProgramName}"`,
+  ).toBe(1);
+
+  if (trimmedAttempt !== existingProgramName) {
+    expect(await countProgramRows(page, trimmedAttempt)).toBe(0);
+  }
+
+  const hasError = await page
+    .getByText(/duplicate|already exists|unique/i)
+    .or(dialog.getByText(/duplicate|already exists|unique/i))
+    .isVisible()
+    .catch(() => false);
+  expect(hasError).toBeTruthy();
 }
 
 export async function expandAiConfigIfCollapsed(dialog: Locator) {
