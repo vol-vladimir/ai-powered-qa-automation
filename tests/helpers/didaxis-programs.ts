@@ -52,6 +52,88 @@ export function editButtonInRow(row: Locator) {
     .or(row.getByRole("button", { name: "Edit" }));
 }
 
+export function deleteButtonInRow(row: Locator, programName: string) {
+  return row.getByRole("button", { name: `Delete ${programName}` });
+}
+
+/** Confluence delete confirmation (native browser confirm). */
+export function expectedDeleteConfirmMessage(programName: string) {
+  return `Delete program "${programName}"? All its semesters and courses will be removed. This cannot be undone.`;
+}
+
+export type DeleteConfirmCapture = {
+  type: string;
+  message: string;
+  accepted: boolean;
+};
+
+/**
+ * Native `window.confirm` blocks the delete click until the dialog is handled.
+ * Register `page.once('dialog')` before click, capture the message, then accept/dismiss.
+ */
+export async function triggerDeleteConfirm(
+  page: Page,
+  programName: string,
+  options?: { accept?: boolean },
+): Promise<DeleteConfirmCapture> {
+  const row = programRow(page, programName);
+  await expect(row).toBeVisible();
+  const accept = options?.accept ?? true;
+
+  let captured: DeleteConfirmCapture | null = null;
+  page.once("dialog", async (dialog) => {
+    captured = {
+      type: dialog.type(),
+      message: dialog.message(),
+      accepted: accept,
+    };
+    if (accept) {
+      await dialog.accept();
+    } else {
+      await dialog.dismiss();
+    }
+  });
+
+  await deleteButtonInRow(row, programName).click();
+  await expect
+    .poll(() => captured, { timeout: 10_000 })
+    .not.toBeNull();
+  return captured!;
+}
+
+export async function openDeleteConfirmDialog(
+  page: Page,
+  programName: string,
+) {
+  return triggerDeleteConfirm(page, programName, { accept: false });
+}
+
+export async function deleteProgramWithConfirm(
+  page: Page,
+  programName: string,
+  options?: { accept?: boolean },
+) {
+  const result = await triggerDeleteConfirm(page, programName, options);
+  expect(result.type).toBe("confirm");
+  return result;
+}
+
+export async function expectProgramAbsent(page: Page, programName: string) {
+  await expect(programRow(page, programName)).toHaveCount(0, {
+    timeout: 20_000,
+  });
+}
+
+export async function expectProgramPresent(page: Page, programName: string) {
+  await expect(programRow(page, programName)).toBeVisible();
+}
+
+export const EMPTY_PROGRAMS_MESSAGE =
+  "No programs yet. Create your first program to get started.";
+
+export const MAX_NAME_100 =
+  "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM";
+
 export function nameFieldInDialog(dialog: Locator) {
   return dialog.getByRole("textbox", { name: "Program Name" });
 }
