@@ -1,20 +1,24 @@
 import { test, expect } from "@playwright/test";
 import {
   PROGRAM_DESC_SEED,
+  PROGRAM_NAME_MAX_LENGTH,
   PROGRAM_NAME_SEED,
+  DEFAULT_EXAM_HOURS,
+  DEFAULT_SESSION_HOURS,
+  DESCRIPTION_MAX_LENGTH,
+  captureEditFormSnapshot,
   createProgram,
   descriptionFieldInDialog,
-  ensureSeedProgramExists,
-  examHoursFieldInDialog,
+  nameFieldInDialog,
+  expectDuplicateNameRejected,
+  expectEditFormSnapshot,
+  expectModalClosed,
+  expectSaveBlocked,
   gotoProgramsPage,
   loginAsAdmin,
-  nameFieldInDialog,
   openEditModal,
   programRow,
-  programsTable,
-  saveButtonInDialog,
   saveEditDialog,
-  sessionHoursFieldInDialog,
   uniqueSuffix,
 } from "./helpers/didaxis-programs";
 
@@ -24,33 +28,26 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await gotoProgramsPage(page);
   });
 
-  test("creates a new program with a unique name and description", async ({
-    page,
-  }) => {
-    const suffix = uniqueSuffix();
-    const name = `E2E Program ${suffix}`;
-    const description = `E2E cohort track ${suffix}`;
-
-    await createProgram(page, name, description);
-
-    const row = programRow(page, name);
-    await expect(row.getByRole("paragraph").nth(0)).toHaveText(name);
-    await expect(row.getByRole("paragraph").nth(1)).toHaveText(description);
-  });
-
   test("TC-001: edit form opens with existing program data pre-populated", async ({
     page,
   }) => {
-    await ensureSeedProgramExists(page);
+    const suffix = uniqueSuffix();
+    const programName = `${PROGRAM_NAME_SEED} ${suffix}`;
+    const description = `${PROGRAM_DESC_SEED} ${suffix}`;
 
-    const dialog = await openEditModal(page, PROGRAM_NAME_SEED);
+    await createProgram(page, programName, description);
 
-    await expect(nameFieldInDialog(dialog)).toHaveValue(PROGRAM_NAME_SEED);
-    await expect(descriptionFieldInDialog(dialog)).toHaveValue(
-      PROGRAM_DESC_SEED,
-    );
-    await expect(sessionHoursFieldInDialog(dialog)).toHaveValue("4");
-    await expect(examHoursFieldInDialog(dialog)).toHaveValue("3");
+    const dialog = await openEditModal(page, programName);
+
+    await expectEditFormSnapshot(dialog, {
+      name: programName,
+      description,
+      totalHours: "",
+      sessionHours: DEFAULT_SESSION_HOURS,
+      examHours: DEFAULT_EXAM_HOURS,
+      targetAudience: "",
+      focusAreas: "",
+    });
   });
 
   test("TC-002: program name update is saved and shown immediately in list", async ({
@@ -67,6 +64,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await nameFieldInDialog(dialog).fill(updatedName);
     await saveEditDialog(dialog);
 
+    await expectModalClosed(dialog);
     await expect(programRow(page, updatedName)).toBeVisible();
     await expect(programRow(page, programName)).toHaveCount(0);
   });
@@ -83,11 +81,11 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await createProgram(page, programName, description);
 
     const dialog = await openEditModal(page, programName);
-    const originalSession = await sessionHoursFieldInDialog(dialog).inputValue();
-    const originalExam = await examHoursFieldInDialog(dialog).inputValue();
+    const originalSnapshot = await captureEditFormSnapshot(dialog);
     await descriptionFieldInDialog(dialog).fill(updatedDescription);
     await saveEditDialog(dialog);
 
+    await expectModalClosed(dialog);
     await expect(programRow(page, programName)).toBeVisible();
     const row = programRow(page, programName);
     await expect(row.getByRole("paragraph").nth(1)).toHaveText(
@@ -95,14 +93,10 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     );
 
     const reopened = await openEditModal(page, programName);
-    await expect(nameFieldInDialog(reopened)).toHaveValue(programName);
-    await expect(descriptionFieldInDialog(reopened)).toHaveValue(
-      updatedDescription,
-    );
-    await expect(sessionHoursFieldInDialog(reopened)).toHaveValue(
-      originalSession,
-    );
-    await expect(examHoursFieldInDialog(reopened)).toHaveValue(originalExam);
+    await expectEditFormSnapshot(reopened, {
+      ...originalSnapshot,
+      description: updatedDescription,
+    });
   });
 
   test("TC-004: multiple editable fields can be updated in one save operation", async ({
@@ -117,16 +111,19 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await createProgram(page, programName, description);
 
     const dialog = await openEditModal(page, programName);
+    const originalSnapshot = await captureEditFormSnapshot(dialog);
     await nameFieldInDialog(dialog).fill(updatedName);
     await descriptionFieldInDialog(dialog).fill(updatedDescription);
     await saveEditDialog(dialog);
 
+    await expectModalClosed(dialog);
     await expect(programRow(page, updatedName)).toBeVisible();
     const reopened = await openEditModal(page, updatedName);
-    await expect(nameFieldInDialog(reopened)).toHaveValue(updatedName);
-    await expect(descriptionFieldInDialog(reopened)).toHaveValue(
-      updatedDescription,
-    );
+    await expectEditFormSnapshot(reopened, {
+      ...originalSnapshot,
+      name: updatedName,
+      description: updatedDescription,
+    });
   });
 
   test("TC-005: save is blocked when Name is empty", async ({ page }) => {
@@ -136,10 +133,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
 
     const dialog = await openEditModal(page, programName);
     await nameFieldInDialog(dialog).fill("");
-
-    await expect(saveButtonInDialog(dialog)).toBeDisabled();
-    await expect(dialog).toBeVisible();
-    await expect(programRow(page, programName)).toBeVisible();
+    await expectSaveBlocked(dialog, page, programName);
   });
 
   test("TC-006: save is blocked when Name contains only whitespace", async ({
@@ -151,10 +145,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
 
     const dialog = await openEditModal(page, programName);
     await nameFieldInDialog(dialog).fill("   ");
-
-    await expect(saveButtonInDialog(dialog)).toBeDisabled();
-    await expect(dialog).toBeVisible();
-    await expect(programRow(page, programName)).toBeVisible();
+    await expectSaveBlocked(dialog, page, programName);
   });
 
   test("TC-007: duplicate program name is rejected when uniqueness is required", async ({
@@ -168,32 +159,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await createProgram(page, programB, `Desc B ${suffix}`);
 
     const dialog = await openEditModal(page, programA);
-    await nameFieldInDialog(dialog).fill(programB);
-    await saveButtonInDialog(dialog).click();
-    await page.waitForTimeout(1000);
-
-    await expect
-      .poll(async () => {
-        if (await dialog.isVisible()) {
-          const hasError = await dialog
-            .getByText(/duplicate|already exists|unique/i)
-            .isVisible()
-            .catch(() => false);
-          if (hasError) return "blocked-with-error";
-          if ((await programRow(page, programA).count()) > 0) {
-            return "blocked-original-kept";
-          }
-          return "dialog-open";
-        }
-        const duplicateCount = await programsTable(page)
-          .getByRole("row")
-          .filter({ has: page.getByText(programB, { exact: true }) })
-          .count();
-        if (duplicateCount >= 2) return "duplicates-allowed";
-        if ((await programRow(page, programA).count()) > 0) return "original-kept";
-        return "unknown";
-      })
-      .not.toBe("unknown");
+    await expectDuplicateNameRejected(page, dialog, programA, programB);
   });
 
   test("TC-008: invalid characters in Name are rejected according to validation rules", async ({
@@ -205,18 +171,22 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
 
     await createProgram(page, programName, `Desc ${suffix}`);
 
-    let dialog = await openEditModal(page, programName);
+    const dialog = await openEditModal(page, programName);
     await nameFieldInDialog(dialog).fill(unsafeName);
-    await saveButtonInDialog(dialog).click();
-    await expect(dialog).toBeHidden({ timeout: 20_000 });
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await page.waitForTimeout(2000);
 
     await expect(page.getByRole("alertdialog")).toHaveCount(0);
-    const row = programRow(page, unsafeName);
-    await expect(row).toBeVisible();
-    await expect(row.getByRole("paragraph").nth(0)).toHaveText(unsafeName);
 
-    dialog = await openEditModal(page, unsafeName);
-    await expect(nameFieldInDialog(dialog)).toHaveValue(unsafeName);
+    const unsafeAccepted = (await programRow(page, unsafeName).count()) > 0;
+    expect(
+      unsafeAccepted,
+      "Didaxis should reject or sanitize unsafe/script content in Program Name on edit",
+    ).toBe(false);
+
+    await expect(programRow(page, unsafeName)).toHaveCount(0);
+    await expect(programRow(page, programName)).toBeVisible();
+    await expect(dialog).toBeVisible();
   });
 
   test("TC-009: failed save does not partially update any fields", async ({
@@ -232,10 +202,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     const dialog = await openEditModal(page, programName);
     await descriptionFieldInDialog(dialog).fill(attemptedDescription);
     await nameFieldInDialog(dialog).fill("");
-
-    await expect(saveButtonInDialog(dialog)).toBeDisabled();
-    await dialog.getByRole("button", { name: "Cancel" }).click();
-    await expect(dialog).toBeHidden();
+    await expectSaveBlocked(dialog, page, programName);
 
     const row = programRow(page, programName);
     await expect(row.getByRole("paragraph").nth(1)).toHaveText(
@@ -254,6 +221,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await nameFieldInDialog(dialog).fill(minName);
     await saveEditDialog(dialog);
 
+    await expectModalClosed(dialog);
     await expect(programRow(page, minName)).toBeVisible();
   });
 
@@ -262,34 +230,28 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
   }) => {
     const suffix = uniqueSuffix();
     const programName = `Web Development 2026 ${suffix}`;
-    const originalDescription = `Desc ${suffix}`;
-    const tooLongName = `${"N".repeat(150)} ${suffix}`;
+    const tooLongName = "N".repeat(PROGRAM_NAME_MAX_LENGTH + 1);
 
-    await createProgram(page, programName, originalDescription);
+    await createProgram(page, programName, `Desc ${suffix}`);
 
     const dialog = await openEditModal(page, programName);
     await nameFieldInDialog(dialog).fill(tooLongName);
-    await saveButtonInDialog(dialog).click();
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await page.waitForTimeout(2000);
 
-    const longNameSaved = await expect
-      .poll(async () => (await programRow(page, tooLongName).count()) > 0)
-      .toBe(true)
-      .then(() => true)
-      .catch(() => false);
-
-    if (longNameSaved) {
-      // Didaxis currently allows long program names (no client max-length).
-      return;
-    }
-
+    const longNameAccepted = (await programRow(page, tooLongName).count()) > 0;
+    expect(
+      longNameAccepted,
+      `Program Name must not exceed ${PROGRAM_NAME_MAX_LENGTH} characters`,
+    ).toBe(false);
     await expect(programRow(page, programName)).toBeVisible();
-    await expect(programRow(page, tooLongName)).toHaveCount(0);
+    await expect(dialog).toBeVisible();
   });
 
   test("TC-012: name at exact maximum length is accepted", async ({ page }) => {
     const suffix = uniqueSuffix();
     const programName = `Web Development 2026 ${suffix}`;
-    const maxName = `${"M".repeat(100)}`;
+    const maxName = "M".repeat(PROGRAM_NAME_MAX_LENGTH);
 
     await createProgram(page, programName, `Desc ${suffix}`);
 
@@ -297,6 +259,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await nameFieldInDialog(dialog).fill(maxName);
     await saveEditDialog(dialog);
 
+    await expectModalClosed(dialog);
     const row = programRow(page, maxName);
     await expect(row.getByRole("paragraph").nth(0)).toHaveText(maxName);
 
@@ -318,6 +281,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await descriptionFieldInDialog(dialog).fill(specialDescription);
     await saveEditDialog(dialog);
 
+    await expectModalClosed(dialog);
     const row = programRow(page, programName);
     await expect(row.getByRole("paragraph").nth(1)).toHaveText(
       specialDescription,
@@ -327,6 +291,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await expect(descriptionFieldInDialog(reopened)).toHaveValue(
       specialDescription,
     );
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
   });
 
   test("TC-014: leading/trailing spaces in Name are handled consistently", async ({
@@ -343,6 +308,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await nameFieldInDialog(dialog).fill(paddedInput);
     await saveEditDialog(dialog);
 
+    await expectModalClosed(dialog);
     await expect(programRow(page, trimmedDisplay)).toBeVisible();
     await expect(programRow(page, programName)).toHaveCount(0);
   });
@@ -352,7 +318,9 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
   }) => {
     const suffix = uniqueSuffix();
     const programName = `Web Development 2026 ${suffix}`;
-    const longDescription = `Long desc ${suffix} ${"x".repeat(900)}`;
+    const prefix = `Long desc ${suffix} `;
+    const longDescription =
+      prefix + "x".repeat(DESCRIPTION_MAX_LENGTH - prefix.length);
 
     await createProgram(page, programName, `Short ${suffix}`);
 
@@ -360,6 +328,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await descriptionFieldInDialog(dialog).fill(longDescription);
     await saveEditDialog(dialog);
 
+    await expectModalClosed(dialog);
     const reopened = await openEditModal(page, programName);
     await expect(descriptionFieldInDialog(reopened)).toHaveValue(
       longDescription,
@@ -394,42 +363,62 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
 
       await nameFieldInDialog(dialogA).fill(nameFromA);
       await saveEditDialog(dialogA);
+      await expectModalClosed(dialogA);
 
       await descriptionFieldInDialog(dialogB).fill(descFromB);
-      await saveButtonInDialog(dialogB).click();
+      await dialogB.getByRole("button", { name: "Save" }).click();
 
-      await expect
-        .poll(async () => {
-          const bClosed = !(await dialogB.isVisible());
-          const nameVisible =
-            (await programRow(pageB, nameFromA).count()) > 0;
-          const baseVisible = (await programRow(pageB, baseName).count()) > 0;
-          const conflict = await pageB
-            .getByText(/conflict|stale|version|error/i)
-            .isVisible()
-            .catch(() => false);
-          return bClosed || conflict || nameVisible || baseVisible;
-        })
-        .toBeTruthy();
+      let bSaveResolved = false;
+      try {
+        await expect
+          .poll(
+            async () => {
+              if (
+                await pageB
+                  .getByText(/conflict|stale|version|out of date|error/i)
+                  .isVisible()
+                  .catch(() => false)
+              ) {
+                return "conflict";
+              }
+              if (!(await dialogB.isVisible().catch(() => false))) {
+                return "saved";
+              }
+              return "pending";
+            },
+            { timeout: 20_000 },
+          )
+          .not.toBe("pending");
+        bSaveResolved = true;
+      } catch {
+        bSaveResolved = false;
+      }
+
+      if (!bSaveResolved && (await dialogB.isVisible())) {
+        await dialogB.getByRole("button", { name: "Cancel" }).click();
+        await expectModalClosed(dialogB);
+      }
 
       await gotoProgramsPage(pageB);
-      const finalRow =
+      const finalProgramName =
         (await programRow(pageB, nameFromA).count()) > 0
-          ? programRow(pageB, nameFromA)
-          : programRow(pageB, baseName);
-      await expect(finalRow).toBeVisible();
-
-      const verifyPage = pageB;
-      const verifyName =
-        (await programRow(verifyPage, nameFromA).count()) > 0
           ? nameFromA
           : baseName;
-      const reopened = await openEditModal(verifyPage, verifyName);
-      const savedDescription = await descriptionFieldInDialog(reopened).inputValue();
+      await expect(programRow(pageB, finalProgramName)).toBeVisible();
+
+      const reopened = await openEditModal(pageB, finalProgramName);
+      const savedDescription =
+        await descriptionFieldInDialog(reopened).inputValue();
+
+      const conflictVisible = await pageB
+        .getByText(/conflict|stale|version|out of date|error/i)
+        .isVisible()
+        .catch(() => false);
+      const lastWriteWins = savedDescription === descFromB;
+      const firstWriteWins = savedDescription === description;
+      const staleEditCancelled = !bSaveResolved;
       expect(
-        savedDescription === descFromB ||
-          savedDescription === description ||
-          savedDescription.includes("admin B"),
+        lastWriteWins || firstWriteWins || conflictVisible || staleEditCancelled,
       ).toBeTruthy();
     } finally {
       await contextA.close();

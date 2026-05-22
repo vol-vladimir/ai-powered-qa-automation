@@ -3,18 +3,47 @@ import { expect, type Locator, type Page } from "@playwright/test";
 export const PROGRAM_NAME_SEED = "Web Development 2026";
 export const PROGRAM_DESC_SEED =
   "Full-stack web development track for 2026 cohort";
+export const PROGRAM_NAME_MAX_LENGTH = 100;
+export const DESCRIPTION_MAX_LENGTH = 500;
+export const DEFAULT_SESSION_HOURS = "4";
+export const DEFAULT_EXAM_HOURS = "3";
+
+export type EditFormSnapshot = {
+  name: string;
+  description: string;
+  totalHours: string;
+  sessionHours: string;
+  examHours: string;
+  targetAudience: string;
+  focusAreas: string;
+};
 
 export function programsTable(page: Page) {
   return page.getByRole("table");
 }
 
+function programNameParagraph(page: Page, programName: string) {
+  return page
+    .getByRole("paragraph")
+    .filter({ hasText: new RegExp(`^${escapeRegExp(programName)}$`) });
+}
+
 export function programRow(page: Page, programName: string) {
   return programsTable(page)
     .getByRole("row")
-    .filter({
-      has: page.getByText(programName, { exact: true }),
-    })
+    .filter({ has: programNameParagraph(page, programName) })
     .first();
+}
+
+export async function countProgramRows(page: Page, programName: string) {
+  return programsTable(page)
+    .getByRole("row")
+    .filter({ has: programNameParagraph(page, programName) })
+    .count();
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export function editButtonInRow(row: Locator) {
@@ -31,16 +60,160 @@ export function descriptionFieldInDialog(dialog: Locator) {
   return dialog.getByRole("textbox", { name: "Description" });
 }
 
+export function totalHoursFieldInDialog(dialog: Locator) {
+  return dialog.getByPlaceholder("e.g. 900");
+}
+
 export function sessionHoursFieldInDialog(dialog: Locator) {
-  return dialog.locator('input[type="text"]').nth(1);
+  return dialog
+    .locator("div")
+    .filter({ hasText: /^Default Session Hours$/ })
+    .locator('input[type="text"]');
 }
 
 export function examHoursFieldInDialog(dialog: Locator) {
-  return dialog.locator('input[type="text"]').nth(2);
+  return dialog
+    .locator("div")
+    .filter({ hasText: /^Default Exam Hours$/ })
+    .locator('input[type="text"]');
+}
+
+export function targetAudienceFieldInDialog(dialog: Locator) {
+  return dialog.getByPlaceholder("e.g. Career changers, no CS background");
+}
+
+export function focusAreasFieldInDialog(dialog: Locator) {
+  return dialog.getByPlaceholder(
+    "e.g. Python, SQL, Machine Learning, Data Visualization",
+  );
 }
 
 export function saveButtonInDialog(dialog: Locator) {
   return dialog.getByRole("button", { name: "Save" });
+}
+
+export async function expandAiConfigIfCollapsed(dialog: Locator) {
+  const toggle = dialog.getByRole("button", {
+    name: /AI Generation Config/i,
+  });
+  if (!(await toggle.isVisible().catch(() => false))) {
+    return;
+  }
+  const label = (await toggle.textContent()) ?? "";
+  if (/Show/i.test(label)) {
+    await toggle.click();
+  }
+}
+
+export async function captureEditFormSnapshot(
+  dialog: Locator,
+): Promise<EditFormSnapshot> {
+  await expandAiConfigIfCollapsed(dialog);
+  return {
+    name: await nameFieldInDialog(dialog).inputValue(),
+    description: await descriptionFieldInDialog(dialog).inputValue(),
+    totalHours: await totalHoursFieldInDialog(dialog).inputValue(),
+    sessionHours: await sessionHoursFieldInDialog(dialog).inputValue(),
+    examHours: await examHoursFieldInDialog(dialog).inputValue(),
+    targetAudience: await targetAudienceFieldInDialog(dialog).inputValue(),
+    focusAreas: await focusAreasFieldInDialog(dialog).inputValue(),
+  };
+}
+
+export async function expectEditFormSnapshot(
+  dialog: Locator,
+  expected: EditFormSnapshot,
+) {
+  await expect
+    .poll(async () => captureEditFormSnapshot(dialog))
+    .toEqual(expected);
+}
+
+export async function expectModalClosed(dialog: Locator) {
+  await expect(dialog).toBeHidden({ timeout: 20_000 });
+}
+
+export async function expectSaveBlocked(
+  dialog: Locator,
+  page: Page,
+  originalProgramName: string,
+) {
+  const save = saveButtonInDialog(dialog);
+  await expect(save).toBeDisabled();
+  await expect(dialog).toBeVisible();
+  await expect(programRow(page, originalProgramName)).toBeVisible();
+}
+
+export async function attemptSaveWhenEnabled(dialog: Locator) {
+  const save = saveButtonInDialog(dialog);
+  if (await save.isEnabled()) {
+    await save.click();
+  }
+}
+
+export async function expectSaveRejected(
+  dialog: Locator,
+  page: Page,
+  originalProgramName: string,
+  options?: { validationPattern?: RegExp },
+) {
+  const save = saveButtonInDialog(dialog);
+  if (await save.isDisabled()) {
+    await expect(dialog).toBeVisible();
+  } else {
+    await save.click();
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+    if (options?.validationPattern) {
+      const hasMessage = await dialog
+        .getByText(options.validationPattern)
+        .isVisible()
+        .catch(() => false);
+      if (!hasMessage) {
+        await expect(programRow(page, originalProgramName)).toBeVisible();
+        return;
+      }
+      await expect(dialog.getByText(options.validationPattern)).toBeVisible();
+    }
+  }
+  await expect(programRow(page, originalProgramName)).toBeVisible();
+}
+
+export async function expectDuplicateNameRejected(
+  page: Page,
+  dialog: Locator,
+  originalProgramName: string,
+  duplicateProgramName: string,
+) {
+  await nameFieldInDialog(dialog).fill(duplicateProgramName);
+  await attemptSaveWhenEnabled(dialog);
+
+  await expect(dialog).toBeVisible({ timeout: 10_000 });
+  await expect(programRow(page, originalProgramName)).toBeVisible();
+  await expect(programRow(page, duplicateProgramName)).toBeVisible();
+  await expect(nameFieldInDialog(dialog)).toHaveValue(duplicateProgramName);
+}
+
+export async function expectUnsafeNameRejected(
+  page: Page,
+  dialog: Locator,
+  originalProgramName: string,
+  unsafeName: string,
+) {
+  await nameFieldInDialog(dialog).fill(unsafeName);
+  await attemptSaveWhenEnabled(dialog);
+
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await expect(programRow(page, unsafeName)).toHaveCount(0);
+  await expect(programRow(page, originalProgramName)).toBeVisible();
+
+  const dialogOpen = await dialog.isVisible().catch(() => false);
+  if (dialogOpen) {
+    await expect(dialog).toBeVisible();
+    return;
+  }
+
+  await expectModalClosed(dialog);
+  await expect(programRow(page, originalProgramName)).toBeVisible();
 }
 
 export async function loginAsAdmin(page: Page) {
@@ -100,12 +273,13 @@ export async function openEditModal(page: Page, programName: string) {
   await editButtonInRow(row).click();
   const dialog = page.getByRole("dialog", { name: "Edit Program" });
   await expect(dialog).toBeVisible();
+  await expandAiConfigIfCollapsed(dialog);
   return dialog;
 }
 
 export async function saveEditDialog(dialog: Locator) {
   await saveButtonInDialog(dialog).click();
-  await expect(dialog).toBeHidden({ timeout: 20_000 });
+  await expectModalClosed(dialog);
 }
 
 export function uniqueSuffix() {
