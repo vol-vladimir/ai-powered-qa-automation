@@ -131,6 +131,33 @@ export async function expectProgramPresent(page: Page, programName: string) {
 export const EMPTY_PROGRAMS_MESSAGE =
   "No programs yet. Create your first program to get started.";
 
+export function programDescriptionParagraph(page: Page, programName: string) {
+  return programRow(page, programName).getByRole("paragraph").nth(1);
+}
+
+export function emptyProgramsMessage(page: Page) {
+  return page.getByText(EMPTY_PROGRAMS_MESSAGE);
+}
+
+export function createProgramFromEmptyState(page: Page) {
+  return page
+    .getByRole("button", { name: "Create Program" })
+    .or(page.getByRole("button", { name: "+ New Program" }));
+}
+
+export async function expectProgramListDetails(
+  page: Page,
+  programName: string,
+  description: string,
+) {
+  const row = programRow(page, programName);
+  await expect(row).toBeVisible();
+  await expect(row.getByRole("paragraph").first()).toHaveText(programName);
+  await expect(programDescriptionParagraph(page, programName)).toHaveText(
+    description,
+  );
+}
+
 export const MAX_NAME_100 =
   "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM";
 
