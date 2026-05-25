@@ -12,8 +12,10 @@ import {
   nameFieldInDialog,
   expectDuplicateNameRejected,
   expectEditFormSnapshot,
+  expectMaxLengthNameRejected,
   expectModalClosed,
   expectSaveBlocked,
+  expectUnsafeNameRejected,
   gotoProgramsPage,
   loginAsAdmin,
   openEditModal,
@@ -172,21 +174,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await createProgram(page, programName, `Desc ${suffix}`);
 
     const dialog = await openEditModal(page, programName);
-    await nameFieldInDialog(dialog).fill(unsafeName);
-    await dialog.getByRole("button", { name: "Save" }).click();
-    await page.waitForTimeout(2000);
-
-    await expect(page.getByRole("alertdialog")).toHaveCount(0);
-
-    const unsafeAccepted = (await programRow(page, unsafeName).count()) > 0;
-    expect(
-      unsafeAccepted,
-      "Didaxis should reject or sanitize unsafe/script content in Program Name on edit",
-    ).toBe(false);
-
-    await expect(programRow(page, unsafeName)).toHaveCount(0);
-    await expect(programRow(page, programName)).toBeVisible();
-    await expect(dialog).toBeVisible();
+    await expectUnsafeNameRejected(page, dialog, programName, unsafeName);
   });
 
   test("TC-009: failed save does not partially update any fields", async ({
@@ -235,17 +223,12 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await createProgram(page, programName, `Desc ${suffix}`);
 
     const dialog = await openEditModal(page, programName);
-    await nameFieldInDialog(dialog).fill(tooLongName);
-    await dialog.getByRole("button", { name: "Save" }).click();
-    await page.waitForTimeout(2000);
-
-    const longNameAccepted = (await programRow(page, tooLongName).count()) > 0;
-    expect(
-      longNameAccepted,
-      `Program Name must not exceed ${PROGRAM_NAME_MAX_LENGTH} characters`,
-    ).toBe(false);
-    await expect(programRow(page, programName)).toBeVisible();
-    await expect(dialog).toBeVisible();
+    await expectMaxLengthNameRejected(
+      page,
+      dialog,
+      programName,
+      tooLongName,
+    );
   });
 
   test("TC-012: name at exact maximum length is accepted", async ({ page }) => {

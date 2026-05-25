@@ -369,6 +369,8 @@ export async function expectSaveRejected(
   await expect(programRow(page, originalProgramName)).toBeVisible();
 }
 
+const DUPLICATE_NAME_PATTERN = /duplicate|already exists|unique/i;
+
 export async function expectDuplicateNameRejected(
   page: Page,
   dialog: Locator,
@@ -382,6 +384,36 @@ export async function expectDuplicateNameRejected(
   await expect(programRow(page, originalProgramName)).toBeVisible();
   await expect(programRow(page, duplicateProgramName)).toBeVisible();
   await expect(nameFieldInDialog(dialog)).toHaveValue(duplicateProgramName);
+
+  const hasError = await page
+    .getByText(DUPLICATE_NAME_PATTERN)
+    .or(dialog.getByText(DUPLICATE_NAME_PATTERN))
+    .isVisible()
+    .catch(() => false);
+  expect(
+    hasError,
+    "DS-2: duplicate Program Name on edit must show duplicate/already exists/unique feedback",
+  ).toBeTruthy();
+}
+
+export async function expectMaxLengthNameRejected(
+  page: Page,
+  dialog: Locator,
+  originalProgramName: string,
+  tooLongName: string,
+) {
+  await nameFieldInDialog(dialog).fill(tooLongName);
+  await attemptSaveWhenEnabled(dialog);
+
+  await expect
+    .poll(
+      async () => (await programRow(page, tooLongName).count()) === 0,
+      { timeout: 10_000 },
+    )
+    .toBe(true);
+
+  await expect(dialog).toBeVisible();
+  await expect(programRow(page, originalProgramName)).toBeVisible();
 }
 
 export async function expectUnsafeNameRejected(
@@ -394,7 +426,12 @@ export async function expectUnsafeNameRejected(
   await attemptSaveWhenEnabled(dialog);
 
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
-  await expect(programRow(page, unsafeName)).toHaveCount(0);
+  await expect
+    .poll(
+      async () => (await programRow(page, unsafeName).count()) === 0,
+      { timeout: 10_000 },
+    )
+    .toBe(true);
   await expect(programRow(page, originalProgramName)).toBeVisible();
 
   const dialogOpen = await dialog.isVisible().catch(() => false);
