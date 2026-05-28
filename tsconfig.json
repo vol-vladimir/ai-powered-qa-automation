@@ -13,6 +13,10 @@
     "cypress/**/*.ts",
     "cypress.config.ts",
     "playwright.config.ts",
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    "support/**/*.ts",
+    "fixtures/**/*.ts",
+    "global-setup.ts",
+    "global-teardown.ts"
   ]
 }

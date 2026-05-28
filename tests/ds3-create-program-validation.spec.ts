@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../fixtures/cleanup.fixture";
 import {
   PROGRAM_NAME_MAX_LENGTH,
   PROGRAM_NAME_SEED,
@@ -42,7 +42,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
       name,
       `Programme bilingue — parcours Informatique et IA ${suffix}`,
     );
-    await submitNewProgram(dialog);
+    await submitNewProgram(dialog, page);
     await expectCreateModalClosed(dialog);
     await expect(programRow(page, name)).toBeVisible();
   });
@@ -59,7 +59,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
       `   ${displayName}   `,
       `Applied statistics and machine learning cohort ${suffix}`,
     );
-    await submitNewProgram(dialog);
+    await submitNewProgram(dialog, page);
     await expectCreateModalClosed(dialog);
     await expect(programRow(page, displayName)).toBeVisible();
   });
@@ -76,7 +76,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
       name,
       `Programme francophone — relations économiques ${suffix}`,
     );
-    await submitNewProgram(dialog);
+    await submitNewProgram(dialog, page);
     await expectCreateModalClosed(dialog);
     await expect(programRow(page, name)).toBeVisible();
   });
@@ -93,7 +93,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
       name,
       `Automation fundamentals with API testing module ${suffix}`,
     );
-    await submitNewProgram(dialog);
+    await submitNewProgram(dialog, page);
     await expectCreateModalClosed(dialog);
     await expect(programRow(page, name)).toBeVisible();
   });
@@ -173,7 +173,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
 
     const dialog = await openNewProgramModal(page);
     await fillNewProgramForm(dialog, name, `Boundary test — max length name ${suffix}`);
-    await submitNewProgram(dialog);
+    await submitNewProgram(dialog, page);
     await expectCreateModalClosed(dialog);
     await expect(programRow(page, name)).toBeVisible();
   });
@@ -186,7 +186,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
 
     const dialog = await openNewProgramModal(page);
     await fillNewProgramForm(dialog, tooLongName, `Over-limit name test ${suffix}`);
-    await submitNewProgram(dialog);
+    await submitNewProgram(dialog, page);
     await page.waitForTimeout(1500);
 
     const longNameAccepted = (await programRow(page, tooLongName).count()) > 0;
@@ -208,7 +208,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
 
     const dialog = await openNewProgramModal(page);
     await fillNewProgramForm(dialog, lowerName, `Case-insensitive duplicate test ${suffix}`);
-    await submitNewProgram(dialog);
+    await submitNewProgram(dialog, page);
     await page.waitForTimeout(1500);
 
     const lowerCount = await countProgramRows(page, lowerName);
@@ -240,7 +240,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
       spacedName,
       `Internal spacing normalization test ${suffix}`,
     );
-    await submitNewProgram(dialog);
+    await submitNewProgram(dialog, page);
     await page.waitForTimeout(1500);
 
     const duplicateRows = await countProgramRows(page, seedName);
@@ -256,7 +256,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
 
     const dialog = await openNewProgramModal(page);
     await fillNewProgramForm(dialog, nameWithNewline, `Control character test ${suffix}`);
-    await submitNewProgram(dialog);
+    await submitNewProgram(dialog, page);
     await page.waitForTimeout(1500);
 
     const listedWithNewline =
@@ -297,8 +297,8 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
       await fillNewProgramForm(dialogB, name, description);
 
       await Promise.all([
-        submitNewProgram(dialogA),
-        submitNewProgram(dialogB),
+        submitNewProgram(dialogA, pageA),
+        submitNewProgram(dialogB, pageB),
       ]);
       await pageA.waitForTimeout(2000);
       await pageB.waitForTimeout(2000);
@@ -320,7 +320,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
 
     const dialog = await openNewProgramModal(page);
     await fillNewProgramForm(dialog, name, `Short valid name test ${suffix}`);
-    await submitNewProgram(dialog);
+    await submitNewProgram(dialog, page);
     await expectCreateModalClosed(dialog);
     await expect(programRow(page, name)).toBeVisible();
   });

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../fixtures/cleanup.fixture";
 import {
   PROGRAM_DESC_SEED,
   PROGRAM_NAME_MAX_LENGTH,

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../fixtures/cleanup.fixture";
 import {
   EMPTY_PROGRAMS_MESSAGE,
   MAX_NAME_100,

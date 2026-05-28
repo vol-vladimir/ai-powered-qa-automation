@@ -1,4 +1,9 @@
 import { expect, type Locator, type Page } from "@playwright/test";
+import {
+  createProgramViaApi,
+  loginViaApiPage,
+} from "../../support/didaxis-api";
+import { trackProgram } from "../../support/program-tracker";
 
 export const PROGRAM_NAME_SEED = "Web Development 2026";
 export const PROGRAM_DESC_SEED =
@@ -225,8 +230,20 @@ export async function fillNewProgramForm(
   await descriptionFieldInDialog(dialog).fill(description);
 }
 
-export async function submitNewProgram(dialog: Locator) {
+export async function submitNewProgram(dialog: Locator, page: Page) {
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.url().includes("/api/programs"),
+  );
   await createButtonInDialog(dialog).click();
+  const response = await responsePromise.catch(() => null);
+  if (response?.status() === 201) {
+    const body = (await response.json()) as { data?: { id?: string } };
+    if (body.data?.id) {
+      trackProgram(body.data.id);
+    }
+  }
 }
 
 export async function expectCreateModalClosed(dialog: Locator) {
@@ -255,7 +272,7 @@ export async function expectDuplicateCreateRejected(
     attemptedName,
     "Duplicate name attempt — should be rejected",
   );
-  await submitNewProgram(dialog);
+  await submitNewProgram(dialog, page);
   await page.waitForTimeout(1500);
 
   const dialogStillOpen = await dialog.isVisible().catch(() => false);
@@ -445,26 +462,18 @@ export async function expectUnsafeNameRejected(
 }
 
 export async function loginAsAdmin(page: Page) {
-  const email = process.env.DIDAXIS_EMAIL;
-  const password = process.env.DIDAXIS_PASSWORD;
-  if (!email || !password) {
-    throw new Error(
-      "DIDAXIS_EMAIL and DIDAXIS_PASSWORD must be set (for example via .env and dotenv in playwright.config).",
-    );
-  }
   if (!process.env.DIDAXIS_URL) {
     throw new Error(
       "DIDAXIS_URL must be set so Playwright baseURL resolves (for example via .env).",
     );
   }
+  if (!process.env.DIDAXIS_API_TOKEN) {
+    throw new Error(
+      "DIDAXIS_API_TOKEN must be set for API authentication (for example via .env).",
+    );
+  }
 
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign In" }).click();
-  await expect(page.getByRole("button", { name: /Programs/i })).toBeVisible({
-    timeout: 20_000,
-  });
+  await loginViaApiPage(page);
 }
 
 export async function gotoProgramsPage(page: Page) {
@@ -478,14 +487,18 @@ export async function createProgram(
   name: string,
   description: string,
 ) {
-  await page.getByRole("button", { name: "+ New Program" }).click();
-  const dialog = page.getByRole("dialog", { name: "New Program" });
-  await expect(dialog).toBeVisible();
-  await nameFieldInDialog(dialog).fill(name);
-  await descriptionFieldInDialog(dialog).fill(description);
-  await dialog.getByRole("button", { name: "Create" }).click();
-  await expect(dialog).toBeHidden({ timeout: 20_000 });
+  const program = await createProgramViaApi(name, description);
+  trackProgram(program.id);
+
+  if (page.url().includes("/programs")) {
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Programs" })).toBeVisible();
+  } else {
+    await gotoProgramsPage(page);
+  }
+
   await expect(programRow(page, name)).toBeVisible();
+  return program;
 }
 
 export async function ensureSeedProgramExists(page: Page) {
