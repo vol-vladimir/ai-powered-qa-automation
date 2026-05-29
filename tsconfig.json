@@ -15,8 +15,6 @@
     "playwright.config.ts",
     "tests/**/*.ts",
     "support/**/*.ts",
-    "fixtures/**/*.ts",
-    "global-setup.ts",
-    "global-teardown.ts"
+    "fixtures/**/*.ts"
   ]
 }

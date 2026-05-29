@@ -1,6 +1,6 @@
 import "dotenv/config";
-import { deleteProgramsByIds } from "./support/delete-program";
-import { clearTracker, getTrackedPrograms } from "./support/program-tracker";
+import { deleteProgramsByIds } from "./delete-program";
+import { clearTracker, getTrackedPrograms } from "./program-tracker";
 
 export default async function globalTeardown(): Promise<void> {
   const programIds = getTrackedPrograms();
