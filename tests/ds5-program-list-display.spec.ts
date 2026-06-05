@@ -180,7 +180,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
   });
 
   // Product bug DS-53: empty Description omits description paragraph in list row
-  test.fixme("TC-011: program with empty description is listed safely", async ({
+  test("TC-011: program with empty description is listed safely", async ({
     page,
   }) => {
     const suffix = uniqueSuffix();

@@ -162,7 +162,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
   });
 
   // Product bug DS-52: rapid double-click blocks delete flow
-  test.fixme(
+  test(
     "TC-008: rapid double-click on delete does not cause duplicate DELETE requests",
     async ({ page }) => {
     const suffix = uniqueSuffix();

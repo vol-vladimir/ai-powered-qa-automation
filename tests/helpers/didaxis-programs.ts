@@ -3,6 +3,7 @@ import {
   createProgramViaApi,
   loginViaApiPage,
 } from "../../support/didaxis-api";
+import { registerProgramCreateTracking } from "../../support/register-program-create-tracking";
 import { trackProgram } from "../../support/program-tracker";
 
 export const PROGRAM_NAME_SEED = "Web Development 2026";
@@ -237,13 +238,7 @@ export async function submitNewProgram(dialog: Locator, page: Page) {
       response.url().includes("/api/programs"),
   );
   await createButtonInDialog(dialog).click();
-  const response = await responsePromise.catch(() => null);
-  if (response?.status() === 201) {
-    const body = (await response.json()) as { data?: { id?: string } };
-    if (body.data?.id) {
-      trackProgram(body.data.id);
-    }
-  }
+  await responsePromise.catch(() => null);
 }
 
 export async function expectCreateModalClosed(dialog: Locator) {
@@ -473,6 +468,7 @@ export async function loginAsAdmin(page: Page) {
     );
   }
 
+  registerProgramCreateTracking(page);
   await loginViaApiPage(page);
 }
 
