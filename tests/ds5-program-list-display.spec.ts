@@ -8,11 +8,14 @@ import {
   createProgramFromEmptyState,
   emptyProgramsMessage,
   ensureSeedProgramExists,
+  expectCreateModalClosed,
   expectProgramListDetails,
   gotoProgramsPage,
   loginAsAdmin,
+  nameFieldInDialog,
   newProgramDialog,
   openNewProgramModal,
+  submitNewProgram,
   programRow,
   programsTable,
   uniqueSuffix,
@@ -185,11 +188,11 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
   }) => {
     const suffix = uniqueSuffix();
     const name = `Cloud Fundamentals ${suffix}`;
-    await page.getByRole("button", { name: "+ New Program" }).click();
-    const dialog = newProgramDialog(page);
-    await dialog.getByRole("textbox", { name: "Program Name" }).fill(name);
-    await dialog.getByRole("button", { name: "Create" }).click();
-    await expect(dialog).toBeHidden({ timeout: 20_000 });
+
+    const dialog = await openNewProgramModal(page);
+    await nameFieldInDialog(dialog).fill(name);
+    await submitNewProgram(dialog, page);
+    await expectCreateModalClosed(dialog);
 
     const row = programRow(page, name);
     await expect(row).toBeVisible();
