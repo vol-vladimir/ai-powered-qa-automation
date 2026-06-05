@@ -1,4 +1,6 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
+import { DUPLICATE_NAME_PATTERN } from "../feedback.patterns";
+import { expandAiConfigIfCollapsed } from "./ai-config-section";
 
 export type EditFormSnapshot = {
   name: string;
@@ -9,6 +11,17 @@ export type EditFormSnapshot = {
   targetAudience: string;
   focusAreas: string;
 };
+
+function hoursInputForLabel(dialog: Locator, label: string) {
+  return dialog
+    .getByLabel(label, { exact: true })
+    .or(
+      dialog
+        .getByText(new RegExp(`^${label}$`))
+        .locator("..")
+        .getByRole("textbox"),
+    );
+}
 
 export class EditProgramModal {
   readonly dialog;
@@ -22,6 +35,7 @@ export class EditProgramModal {
   readonly saveButton;
   readonly cancelButton;
   readonly aiConfigToggle;
+  readonly duplicateNameError;
 
   constructor(private readonly page: Page) {
     this.dialog = page.getByRole("dialog", { name: "Edit Program" });
@@ -32,14 +46,14 @@ export class EditProgramModal {
       name: "Description",
     });
     this.totalHoursInput = this.dialog.getByPlaceholder("e.g. 900");
-    this.sessionHoursInput = this.dialog
-      .getByText(/^Default Session Hours$/)
-      .locator("..")
-      .getByRole("textbox");
-    this.examHoursInput = this.dialog
-      .getByText(/^Default Exam Hours$/)
-      .locator("..")
-      .getByRole("textbox");
+    this.sessionHoursInput = hoursInputForLabel(
+      this.dialog,
+      "Default Session Hours",
+    );
+    this.examHoursInput = hoursInputForLabel(
+      this.dialog,
+      "Default Exam Hours",
+    );
     this.targetAudienceInput = this.dialog.getByPlaceholder(
       "e.g. Career changers, no CS background",
     );
@@ -51,6 +65,17 @@ export class EditProgramModal {
     this.aiConfigToggle = this.dialog.getByRole("button", {
       name: /AI Generation Config/i,
     });
+    this.duplicateNameError = this.dialog.getByText(DUPLICATE_NAME_PATTERN);
+  }
+
+  duplicateNameFeedback() {
+    return this.page
+      .getByText(DUPLICATE_NAME_PATTERN)
+      .or(this.duplicateNameError);
+  }
+
+  async hasDuplicateNameFeedback(): Promise<boolean> {
+    return this.duplicateNameFeedback().isVisible().catch(() => false);
   }
 
   async fillName(name: string) {
@@ -70,13 +95,7 @@ export class EditProgramModal {
   }
 
   async expandAiConfigIfCollapsed() {
-    if (!(await this.aiConfigToggle.isVisible().catch(() => false))) {
-      return;
-    }
-    const label = (await this.aiConfigToggle.textContent()) ?? "";
-    if (/Show/i.test(label)) {
-      await this.aiConfigToggle.click();
-    }
+    await expandAiConfigIfCollapsed(this.aiConfigToggle);
   }
 
   async captureSnapshot(): Promise<EditFormSnapshot> {

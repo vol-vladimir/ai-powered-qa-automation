@@ -1,4 +1,6 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
+import { DUPLICATE_NAME_PATTERN } from "../feedback.patterns";
+import { expandAiConfigIfCollapsed } from "./ai-config-section";
 
 export class NewProgramModal {
   readonly dialog;
@@ -9,6 +11,7 @@ export class NewProgramModal {
   readonly aiConfigToggle;
   readonly targetAudienceInput;
   readonly closeButton;
+  readonly duplicateNameError;
 
   constructor(private readonly page: Page) {
     this.dialog = page.getByRole("dialog", { name: "New Program" });
@@ -30,10 +33,25 @@ export class NewProgramModal {
       "e.g. Career changers, no CS background",
     );
     this.closeButton = this.dialog
-      .getByRole("button")
-      .filter({ hasNot: this.createButton })
-      .filter({ hasNot: this.cancelButton })
-      .first();
+      .getByRole("button", { name: "Close" })
+      .or(
+        this.dialog
+          .getByRole("button")
+          .filter({ hasNot: this.createButton })
+          .filter({ hasNot: this.cancelButton })
+          .first(),
+      );
+    this.duplicateNameError = this.dialog.getByText(DUPLICATE_NAME_PATTERN);
+  }
+
+  duplicateNameFeedback() {
+    return this.page
+      .getByText(DUPLICATE_NAME_PATTERN)
+      .or(this.duplicateNameError);
+  }
+
+  async hasDuplicateNameFeedback(): Promise<boolean> {
+    return this.duplicateNameFeedback().isVisible().catch(() => false);
   }
 
   async fill(name: string, description: string) {
@@ -78,12 +96,6 @@ export class NewProgramModal {
   }
 
   async expandAiConfigIfCollapsed() {
-    if (!(await this.aiConfigToggle.isVisible().catch(() => false))) {
-      return;
-    }
-    const label = (await this.aiConfigToggle.textContent()) ?? "";
-    if (/Show/i.test(label)) {
-      await this.aiConfigToggle.click();
-    }
+    await expandAiConfigIfCollapsed(this.aiConfigToggle);
   }
 }

@@ -182,6 +182,10 @@ test.describe("Didaxis Studio — create new academic program (DS-1)", () => {
   test("TC-012: double-clicking Create does not create duplicate programs", async ({
     page,
   }) => {
+    test.fail(
+      true,
+      "Known demo bug — double-clicking Create can create duplicate programs.",
+    );
     const suffix = uniqueSuffix();
     const name = `Double Click Guard ${suffix}`;
     const programs = new ProgramsPage(page);

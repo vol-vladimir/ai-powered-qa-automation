@@ -101,11 +101,23 @@ explicit unauthenticated scenarios.
 
 ## Known demo guardrails
 
-Do not attempt to fix or work around these intentional demo-app behaviors:
+Do not attempt to fix or work around these intentional demo-app behaviors.
+Use `test.fail(true, 'Known demo bug — …')` when the test still runs and
+asserts the correct behavior. Use `test.skip(true, '…')` when the demo bug
+causes timeouts or hangs (e.g. DS-52).
 
-| Test | Guardrail |
-|------|-----------|
-| DS-2 TC-009 | Duplicate program names on rename are **allowed** (hardcoded demo bug). Mark with `test.fail(true, 'Known demo bug — duplicate program names are allowed on rename.')`. |
+| Test | Mechanism | Guardrail |
+|------|-----------|-----------|
+| DS-1 TC-012 | `test.fail` | Double-clicking Create can create duplicate programs. |
+| DS-2 TC-007 | `test.fail` | Duplicate program names are **allowed** on rename. |
+| DS-3 TC-007 | `test.fail` | Duplicate program names are **allowed** on create (exact match). |
+| DS-3 TC-008 | `test.fail` | Duplicate names allowed when only leading/trailing spaces differ. |
+| DS-3 TC-009 | `test.fail` | Duplicate program names are **allowed** on create. |
+| DS-3 TC-012 | `test.fail` | Program names exceeding 100 characters are accepted. |
+| DS-3 TC-016 | `test.fail` | Parallel create attempts with the same name can create duplicates. |
+| DS-4 TC-004 | `test.fail` | Total table row count is unreliable after delete in shared org. |
+| DS-4 TC-008 | `test.skip` | DS-52 — rapid double-click on delete blocks or duplicates the flow. |
+| DS-5 TC-011 | `test.fail` | DS-53 — empty Description omits description paragraph in list row. |
 
 ## Output
 

@@ -2,6 +2,11 @@ import type { Page } from "@playwright/test";
 import { BasePage } from "./base.page";
 import { EditProgramModal } from "./components/edit-program.modal";
 import { NewProgramModal } from "./components/new-program.modal";
+import {
+  CONFLICT_ERROR_PATTERN,
+  LIST_LOAD_ERROR_PATTERN,
+  NOT_FOUND_OR_ERROR_PATTERN,
+} from "./feedback.patterns";
 
 export const EMPTY_PROGRAMS_MESSAGE =
   "No programs yet. Create your first program to get started.";
@@ -20,6 +25,7 @@ export class ProgramsPage extends BasePage {
   readonly heading;
   readonly newProgramButton;
   readonly createProgramEmptyStateButton;
+  readonly programColumnHeader;
   readonly programsTable;
   readonly emptyStateMessage;
   readonly newProgramModal: NewProgramModal;
@@ -31,6 +37,9 @@ export class ProgramsPage extends BasePage {
     this.newProgramButton = page.getByRole("button", { name: "+ New Program" });
     this.createProgramEmptyStateButton = page.getByRole("button", {
       name: "Create Program",
+    });
+    this.programColumnHeader = page.getByRole("columnheader", {
+      name: "Program",
     });
     this.programsTable = page.getByRole("table");
     this.emptyStateMessage = page.getByText(EMPTY_PROGRAMS_MESSAGE);
@@ -59,6 +68,30 @@ export class ProgramsPage extends BasePage {
       .first();
   }
 
+  tableRows() {
+    return this.programsTable.getByRole("row");
+  }
+
+  tableDataRows() {
+    return this.tableRows().filter({ has: this.page.getByRole("paragraph") });
+  }
+
+  firstDataRow() {
+    return this.tableDataRows().first();
+  }
+
+  async tableRowCount() {
+    return this.tableRows().count();
+  }
+
+  async tableDataRowCount() {
+    return this.tableDataRows().count();
+  }
+
+  paragraphsInRow(programName: string) {
+    return this.rowFor(programName).getByRole("paragraph");
+  }
+
   async countRows(programName: string) {
     return this.programsTable
       .getByRole("row")
@@ -75,7 +108,9 @@ export class ProgramsPage extends BasePage {
   }
 
   editButtonFor(programName: string) {
-    return this.page.getByRole("button", { name: `Edit ${programName}` });
+    return this.rowFor(programName).getByRole("button", {
+      name: `Edit ${programName}`,
+    });
   }
 
   deleteButtonFor(programName: string) {
@@ -84,13 +119,29 @@ export class ProgramsPage extends BasePage {
     });
   }
 
+  alertDialogs() {
+    return this.page.getByRole("alertdialog");
+  }
+
+  notFoundOrErrorMessage() {
+    return this.page.getByText(NOT_FOUND_OR_ERROR_PATTERN);
+  }
+
+  listLoadErrorMessage() {
+    return this.page.getByText(LIST_LOAD_ERROR_PATTERN);
+  }
+
+  conflictErrorMessage() {
+    return this.page.getByText(CONFLICT_ERROR_PATTERN);
+  }
+
   async openEditFor(programName: string) {
     await this.editButtonFor(programName).click();
     await this.editProgramModal.expandAiConfigIfCollapsed();
   }
 
   async orgHasPrograms() {
-    return (await this.page.getByRole("button", { name: /^Delete / }).count()) > 0;
+    return (await this.tableDataRowCount()) > 0;
   }
 
   expectedDeleteConfirmMessage(programName: string) {
