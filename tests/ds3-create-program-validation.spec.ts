@@ -1,33 +1,20 @@
 import { test, expect } from "../fixtures/cleanup.fixture";
+import { ProgramsPage } from "../pages/programs.page";
 import { ADMIN_AUTH_FILE } from "../support/auth-state";
-import { registerProgramCreateTracking } from "../support/register-program-create-tracking";
 import {
   PROGRAM_NAME_MAX_LENGTH,
   PROGRAM_NAME_SEED,
   PROGRAM_DESC_SEED,
-  countProgramRows,
-  createButtonInDialog,
-  createProgram,
-  descriptionFieldInDialog,
-  expectCreateBlocked,
-  expectCreateModalClosed,
-  expectDuplicateCreateRejected,
-  fillNewProgramForm,
-  gotoProgramsPage,
-  nameFieldInDialog,
-  newProgramDialog,
-  openNewProgramModal,
-  programNameParagraph,
-  programRow,
-  submitNewProgram,
   uniqueSuffix,
-} from "./helpers/didaxis-programs";
-
-const MAX_NAME_100 = "M".repeat(PROGRAM_NAME_MAX_LENGTH);
+} from "../support/program-constants";
+import { createProgram } from "../support/program-factory";
+import { registerProgramCreateTracking } from "../support/register-program-create-tracking";
 
 test.describe("Didaxis Studio — create program name validation (DS-3)", () => {
   test.beforeEach(async ({ page }) => {
-    await gotoProgramsPage(page);
+    const programs = new ProgramsPage(page);
+    await programs.goto();
+    await expect(programs.heading).toBeVisible();
   });
 
   test("TC-001: program is created when Program Name is Informatique & IA - Niveau 2", async ({
@@ -35,16 +22,17 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
   }) => {
     const suffix = uniqueSuffix();
     const name = `Informatique & IA - Niveau 2 ${suffix}`;
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
 
-    const dialog = await openNewProgramModal(page);
-    await fillNewProgramForm(
-      dialog,
+    await programs.openNewProgram();
+    await modal.fill(
       name,
       `Programme bilingue — parcours Informatique et IA ${suffix}`,
     );
-    await submitNewProgram(dialog, page);
-    await expectCreateModalClosed(dialog);
-    await expect(programRow(page, name)).toBeVisible();
+    await modal.submit();
+    await expect(modal.dialog).toBeHidden({ timeout: 20_000 });
+    await expect(programs.rowFor(name)).toBeVisible();
   });
 
   test("TC-002: program is created when leading/trailing spaces are trimmed", async ({
@@ -52,16 +40,17 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
   }) => {
     const suffix = uniqueSuffix();
     const displayName = `Data Science 2026 ${suffix}`;
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
 
-    const dialog = await openNewProgramModal(page);
-    await fillNewProgramForm(
-      dialog,
+    await programs.openNewProgram();
+    await modal.fill(
       `   ${displayName}   `,
       `Applied statistics and machine learning cohort ${suffix}`,
     );
-    await submitNewProgram(dialog, page);
-    await expectCreateModalClosed(dialog);
-    await expect(programRow(page, displayName)).toBeVisible();
+    await modal.submit();
+    await expect(modal.dialog).toBeHidden({ timeout: 20_000 });
+    await expect(programs.rowFor(displayName)).toBeVisible();
   });
 
   test("TC-003: program is created when Program Name contains accented Latin characters", async ({
@@ -69,16 +58,17 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
   }) => {
     const suffix = uniqueSuffix();
     const name = `Économie Internationale 2026 ${suffix}`;
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
 
-    const dialog = await openNewProgramModal(page);
-    await fillNewProgramForm(
-      dialog,
+    await programs.openNewProgram();
+    await modal.fill(
       name,
       `Programme francophone — relations économiques ${suffix}`,
     );
-    await submitNewProgram(dialog, page);
-    await expectCreateModalClosed(dialog);
-    await expect(programRow(page, name)).toBeVisible();
+    await modal.submit();
+    await expect(modal.dialog).toBeHidden({ timeout: 20_000 });
+    await expect(programs.rowFor(name)).toBeVisible();
   });
 
   test("TC-004: program is created when Program Name uses punctuation and symbols", async ({
@@ -86,34 +76,46 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
   }) => {
     const suffix = uniqueSuffix();
     const name = `QA/Test_Automation (Level-2) + API ${suffix}`;
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
 
-    const dialog = await openNewProgramModal(page);
-    await fillNewProgramForm(
-      dialog,
+    await programs.openNewProgram();
+    await modal.fill(
       name,
       `Automation fundamentals with API testing module ${suffix}`,
     );
-    await submitNewProgram(dialog, page);
-    await expectCreateModalClosed(dialog);
-    await expect(programRow(page, name)).toBeVisible();
+    await modal.submit();
+    await expect(modal.dialog).toBeHidden({ timeout: 20_000 });
+    await expect(programs.rowFor(name)).toBeVisible();
   });
 
   test("TC-005: form is not submitted when Program Name is only whitespace", async ({
     page,
   }) => {
-    const dialog = await openNewProgramModal(page);
-    await fillNewProgramForm(dialog, "   ", "Whitespace-only name validation test");
-    await expectCreateBlocked(dialog, page);
-    await expect(programRow(page, "   ")).toHaveCount(0);
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
+
+    await programs.openNewProgram();
+    await modal.fill("   ", "Whitespace-only name validation test");
+    if (await modal.createButton.isDisabled()) {
+      await expect(modal.dialog).toBeVisible();
+    } else {
+      await modal.createButton.click();
+      await expect(modal.dialog).toBeVisible({ timeout: 10_000 });
+    }
+    await expect(programs.rowFor("   ")).toHaveCount(0);
   });
 
   test("TC-006: form is not submitted when Program Name is empty", async ({
     page,
   }) => {
-    const dialog = await openNewProgramModal(page);
-    await descriptionFieldInDialog(dialog).fill("Empty name validation test");
-    await expect(createButtonInDialog(dialog)).toBeDisabled();
-    await expect(dialog).toBeVisible();
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
+
+    await programs.openNewProgram();
+    await modal.fillDescription("Empty name validation test");
+    await expect(modal.createButton).toBeDisabled();
+    await expect(modal.dialog).toBeVisible();
   });
 
   test("TC-007: duplicate program creation is rejected for exact name Web Development 2026", async ({
@@ -121,11 +123,24 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
   }) => {
     const suffix = uniqueSuffix();
     const seedName = `${PROGRAM_NAME_SEED} ${suffix}`;
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
 
     await createProgram(page, seedName, PROGRAM_DESC_SEED);
+    await programs.openNewProgram();
+    await modal.fill(seedName, "Duplicate name attempt — should be rejected");
+    await modal.submit();
+    await page.waitForTimeout(1500);
 
-    const dialog = await openNewProgramModal(page);
-    await expectDuplicateCreateRejected(page, dialog, seedName, seedName);
+    await expect(modal.dialog).toBeVisible();
+    expect(await programs.countRows(seedName)).toBe(1);
+
+    const hasError = await page
+      .getByText(/duplicate|already exists|unique/i)
+      .or(modal.dialog.getByText(/duplicate|already exists|unique/i))
+      .isVisible()
+      .catch(() => false);
+    expect(hasError).toBeTruthy();
   });
 
   test("TC-008: duplicate creation is rejected when only leading/trailing spaces differ", async ({
@@ -133,16 +148,28 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
   }) => {
     const suffix = uniqueSuffix();
     const seedName = `${PROGRAM_NAME_SEED} ${suffix}`;
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
 
     await createProgram(page, seedName, PROGRAM_DESC_SEED);
-
-    const dialog = await openNewProgramModal(page);
-    await expectDuplicateCreateRejected(
-      page,
-      dialog,
-      seedName,
+    await programs.openNewProgram();
+    await modal.fill(
       `  ${seedName}  `,
+      "Duplicate name attempt — should be rejected",
     );
+    await modal.submit();
+    await page.waitForTimeout(1500);
+
+    await expect(modal.dialog).toBeVisible();
+    expect(await programs.countRows(seedName)).toBe(1);
+    expect(await programs.countRows(`  ${seedName}  `.trim())).toBe(0);
+
+    const hasError = await page
+      .getByText(/duplicate|already exists|unique/i)
+      .or(modal.dialog.getByText(/duplicate|already exists|unique/i))
+      .isVisible()
+      .catch(() => false);
+    expect(hasError).toBeTruthy();
   });
 
   test("TC-009: no program is created when duplicate name is submitted", async ({
@@ -150,19 +177,40 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
   }) => {
     const suffix = uniqueSuffix();
     const seedName = `${PROGRAM_NAME_SEED} ${suffix}`;
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
 
     await createProgram(page, seedName, PROGRAM_DESC_SEED);
+    await programs.openNewProgram();
+    await modal.fill(seedName, "Duplicate name attempt — should be rejected");
+    await modal.submit();
+    await page.waitForTimeout(1500);
 
-    const dialog = await openNewProgramModal(page);
-    await expectDuplicateCreateRejected(page, dialog, seedName, seedName);
+    await expect(modal.dialog).toBeVisible();
+    expect(await programs.countRows(seedName)).toBe(1);
+
+    const hasError = await page
+      .getByText(/duplicate|already exists|unique/i)
+      .or(modal.dialog.getByText(/duplicate|already exists|unique/i))
+      .isVisible()
+      .catch(() => false);
+    expect(hasError).toBeTruthy();
   });
 
   test("TC-010: create does not succeed when Program Name contains only tabs", async ({
     page,
   }) => {
-    const dialog = await openNewProgramModal(page);
-    await fillNewProgramForm(dialog, "\t\t\t", "Tab-only name test");
-    await expectCreateBlocked(dialog, page);
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
+
+    await programs.openNewProgram();
+    await modal.fill("\t\t\t", "Tab-only name test");
+    if (await modal.createButton.isDisabled()) {
+      await expect(modal.dialog).toBeVisible();
+    } else {
+      await modal.createButton.click();
+      await expect(modal.dialog).toBeVisible({ timeout: 10_000 });
+    }
   });
 
   test("TC-011: program name at exact maximum length 100 is accepted when unique", async ({
@@ -170,12 +218,14 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
   }) => {
     const suffix = uniqueSuffix();
     const name = `${"M".repeat(PROGRAM_NAME_MAX_LENGTH - suffix.length)}${suffix}`;
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
 
-    const dialog = await openNewProgramModal(page);
-    await fillNewProgramForm(dialog, name, `Boundary test — max length name ${suffix}`);
-    await submitNewProgram(dialog, page);
-    await expectCreateModalClosed(dialog);
-    await expect(programRow(page, name)).toBeVisible();
+    await programs.openNewProgram();
+    await modal.fill(name, `Boundary test — max length name ${suffix}`);
+    await modal.submit();
+    await expect(modal.dialog).toBeHidden({ timeout: 20_000 });
+    await expect(programs.rowFor(name)).toBeVisible();
   });
 
   test("TC-012: program name exceeding 100 characters is rejected", async ({
@@ -183,18 +233,20 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
   }) => {
     const suffix = uniqueSuffix();
     const tooLongName = `${"N".repeat(PROGRAM_NAME_MAX_LENGTH + 1)} ${suffix}`;
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
 
-    const dialog = await openNewProgramModal(page);
-    await fillNewProgramForm(dialog, tooLongName, `Over-limit name test ${suffix}`);
-    await submitNewProgram(dialog, page);
+    await programs.openNewProgram();
+    await modal.fill(tooLongName, `Over-limit name test ${suffix}`);
+    await modal.submit();
     await page.waitForTimeout(1500);
 
-    const longNameAccepted = (await programRow(page, tooLongName).count()) > 0;
+    const longNameAccepted = (await programs.countRows(tooLongName)) > 0;
     expect(
       longNameAccepted,
       `Program Name must not exceed ${PROGRAM_NAME_MAX_LENGTH} characters`,
     ).toBe(false);
-    await expect(dialog).toBeVisible();
+    await expect(modal.dialog).toBeVisible();
   });
 
   test("TC-013: duplicate validation for case-different name is handled consistently", async ({
@@ -203,17 +255,18 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     const suffix = uniqueSuffix();
     const seedName = `${PROGRAM_NAME_SEED} ${suffix}`;
     const lowerName = seedName.toLowerCase();
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
 
     await createProgram(page, seedName, PROGRAM_DESC_SEED);
-
-    const dialog = await openNewProgramModal(page);
-    await fillNewProgramForm(dialog, lowerName, `Case-insensitive duplicate test ${suffix}`);
-    await submitNewProgram(dialog, page);
+    await programs.openNewProgram();
+    await modal.fill(lowerName, `Case-insensitive duplicate test ${suffix}`);
+    await modal.submit();
     await page.waitForTimeout(1500);
 
-    const lowerCount = await countProgramRows(page, lowerName);
-    const seedCount = await countProgramRows(page, seedName);
-    const dialogOpen = await dialog.isVisible();
+    const lowerCount = await programs.countRows(lowerName);
+    const seedCount = await programs.countRows(seedName);
+    const dialogOpen = await modal.dialog.isVisible();
     const hasDuplicateError = await page
       .getByText(/duplicate|already exists|unique/i)
       .isVisible()
@@ -231,19 +284,19 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     const suffix = uniqueSuffix();
     const seedName = `${PROGRAM_NAME_SEED} ${suffix}`;
     const spacedName = seedName.replace(" ", "  ");
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
 
     await createProgram(page, seedName, PROGRAM_DESC_SEED);
-
-    const dialog = await openNewProgramModal(page);
-    await fillNewProgramForm(
-      dialog,
+    await programs.openNewProgram();
+    await modal.fill(
       spacedName,
       `Internal spacing normalization test ${suffix}`,
     );
-    await submitNewProgram(dialog, page);
+    await modal.submit();
     await page.waitForTimeout(1500);
 
-    const duplicateRows = await countProgramRows(page, seedName);
+    const duplicateRows = await programs.countRows(seedName);
     expect(duplicateRows).toBeLessThanOrEqual(1);
   });
 
@@ -253,22 +306,28 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     const suffix = uniqueSuffix();
     const nameWithNewline = `Cloud Engineering\n2026 ${suffix}`;
     const sanitizedName = `Cloud Engineering 2026 ${suffix}`;
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
 
-    const dialog = await openNewProgramModal(page);
-    await fillNewProgramForm(dialog, nameWithNewline, `Control character test ${suffix}`);
-    await submitNewProgram(dialog, page);
+    await programs.openNewProgram();
+    await modal.fill(nameWithNewline, `Control character test ${suffix}`);
+    await modal.submit();
     await page.waitForTimeout(1500);
 
     const listedWithNewline =
-      (await programNameParagraph(page, nameWithNewline).count()) > 0;
+      (await programs.programNameParagraph(nameWithNewline).count()) > 0;
     if (listedWithNewline) {
-      const displayedName = await programNameParagraph(page, nameWithNewline).innerText();
+      const displayedName = await programs
+        .programNameParagraph(nameWithNewline)
+        .innerText();
       expect(displayedName.includes("\n")).toBe(false);
       return;
     }
 
-    await expect(programRow(page, sanitizedName)).toBeVisible();
-    const displayedName = await programNameParagraph(page, sanitizedName).innerText();
+    await expect(programs.rowFor(sanitizedName)).toBeVisible();
+    const displayedName = await programs
+      .programNameParagraph(sanitizedName)
+      .innerText();
     expect(displayedName).toBe(sanitizedName);
   });
 
@@ -286,25 +345,30 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     registerProgramCreateTracking(pageA);
     registerProgramCreateTracking(pageB);
 
+    const programsA = new ProgramsPage(pageA);
+    const programsB = new ProgramsPage(pageB);
+    const modalA = programsA.newProgramModal;
+    const modalB = programsB.newProgramModal;
+
     try {
-      await gotoProgramsPage(pageA);
-      await gotoProgramsPage(pageB);
+      await programsA.goto();
+      await expect(programsA.heading).toBeVisible();
+      await programsB.goto();
+      await expect(programsB.heading).toBeVisible();
 
-      const dialogA = await openNewProgramModal(pageA);
-      const dialogB = await openNewProgramModal(pageB);
+      await programsA.openNewProgram();
+      await programsB.openNewProgram();
 
-      await fillNewProgramForm(dialogA, name, description);
-      await fillNewProgramForm(dialogB, name, description);
+      await modalA.fill(name, description);
+      await modalB.fill(name, description);
 
-      await Promise.all([
-        submitNewProgram(dialogA, pageA),
-        submitNewProgram(dialogB, pageB),
-      ]);
+      await Promise.all([modalA.submit(), modalB.submit()]);
       await pageA.waitForTimeout(2000);
       await pageB.waitForTimeout(2000);
 
-      await gotoProgramsPage(pageA);
-      const rowCount = await countProgramRows(pageA, name);
+      await programsA.goto();
+      await expect(programsA.heading).toBeVisible();
+      const rowCount = await programsA.countRows(name);
       expect(rowCount).toBeLessThanOrEqual(1);
     } finally {
       await contextA.close();
@@ -317,11 +381,13 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
   }) => {
     const suffix = uniqueSuffix();
     const name = `AI ${suffix}`;
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
 
-    const dialog = await openNewProgramModal(page);
-    await fillNewProgramForm(dialog, name, `Short valid name test ${suffix}`);
-    await submitNewProgram(dialog, page);
-    await expectCreateModalClosed(dialog);
-    await expect(programRow(page, name)).toBeVisible();
+    await programs.openNewProgram();
+    await modal.fill(name, `Short valid name test ${suffix}`);
+    await modal.submit();
+    await expect(modal.dialog).toBeHidden({ timeout: 20_000 });
+    await expect(programs.rowFor(name)).toBeVisible();
   });
 });

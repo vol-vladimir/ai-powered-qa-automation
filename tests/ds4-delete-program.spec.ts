@@ -1,28 +1,20 @@
 import { test, expect } from "../fixtures/cleanup.fixture";
+import { LoginPage } from "../pages/login.page";
+import { EMPTY_PROGRAMS_MESSAGE, ProgramsPage } from "../pages/programs.page";
 import {
+  MAX_NAME_100,
   PROGRAM_DESC_SEED,
   PROGRAM_NAME_SEED,
-  clearSessionForUiLogin,
-  createProgram,
-  deleteButtonInRow,
-  deleteProgramWithConfirm,
-  EMPTY_PROGRAMS_MESSAGE,
-  expectedDeleteConfirmMessage,
-  gotoProgramsPage,
-  MAX_NAME_100,
-  openEditModal,
-  programRow,
-  programsTable,
   uniqueSuffix,
-  openDeleteConfirmDialog,
-  triggerDeleteConfirm,
-  expectProgramAbsent,
-  expectProgramPresent,
-} from "./helpers/didaxis-programs";
+} from "../support/program-constants";
+import { createProgram } from "../support/program-factory";
+import { clearSessionForUiLogin } from "../support/session";
 
 test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () => {
   test.beforeEach(async ({ page }) => {
-    await gotoProgramsPage(page);
+    const programs = new ProgramsPage(page);
+    await programs.goto();
+    await expect(programs.heading).toBeVisible();
   });
 
   test("TC-001: native confirmation dialog is shown when delete is triggered", async ({
@@ -30,12 +22,14 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
   }) => {
     const suffix = uniqueSuffix();
     const name = `Test Program ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, name, `QA delete confirmation test ${suffix}`);
+    await expect(programs.rowFor(name)).toBeVisible();
 
-    const dialog = await openDeleteConfirmDialog(page, name);
-    expect(dialog.message).toBe(expectedDeleteConfirmMessage(name));
-
-    await expectProgramPresent(page, name);
+    const dialog = await programs.triggerDeleteConfirm(name, { accept: false });
+    expect(dialog.message).toBe(programs.expectedDeleteConfirmMessage(name));
+    await expect(programs.rowFor(name)).toBeVisible();
   });
 
   test("TC-002: program is removed from the list after deletion is confirmed", async ({
@@ -43,12 +37,15 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
   }) => {
     const suffix = uniqueSuffix();
     const name = `Test Program ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, name, `QA delete confirm ${suffix}`);
 
-    const dialog = await deleteProgramWithConfirm(page, name);
-    expect(dialog.message).toBe(expectedDeleteConfirmMessage(name));
+    const dialog = await programs.triggerDeleteConfirm(name);
+    expect(dialog.type).toBe("confirm");
+    expect(dialog.message).toBe(programs.expectedDeleteConfirmMessage(name));
 
-    await expectProgramAbsent(page, name);
+    await expect(programs.rowFor(name)).toHaveCount(0, { timeout: 20_000 });
   });
 
   test("TC-003: program remains in the list when deletion is cancelled", async ({
@@ -57,13 +54,12 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     const suffix = uniqueSuffix();
     const name = `${PROGRAM_NAME_SEED} ${suffix}`;
     const description = `${PROGRAM_DESC_SEED} ${suffix}`;
-    await createProgram(page, name, description);
+    const programs = new ProgramsPage(page);
 
-    await deleteProgramWithConfirm(page, name, { accept: false });
-    await expectProgramPresent(page, name);
-    await expect(programRow(page, name).getByRole("paragraph").nth(1)).toHaveText(
-      description,
-    );
+    await createProgram(page, name, description);
+    await programs.triggerDeleteConfirm(name, { accept: false });
+    await expect(programs.rowFor(name)).toBeVisible();
+    await expect(programs.descriptionInRow(name)).toHaveText(description);
   });
 
   test("TC-004: program list reflects deletion immediately without manual refresh", async ({
@@ -72,15 +68,17 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     const suffix = uniqueSuffix();
     const toDelete = `Test Program ${suffix}`;
     const toKeep = `${PROGRAM_NAME_SEED} keep ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, toDelete, `Delete immediate refresh ${suffix}`);
     await createProgram(page, toKeep, `${PROGRAM_DESC_SEED} ${suffix}`);
 
-    const rowsBefore = await programsTable(page).getByRole("row").count();
-    await deleteProgramWithConfirm(page, toDelete);
-    await expectProgramAbsent(page, toDelete);
-    await expectProgramPresent(page, toKeep);
+    const rowsBefore = await programs.programsTable.getByRole("row").count();
+    await programs.triggerDeleteConfirm(toDelete);
+    await expect(programs.rowFor(toDelete)).toHaveCount(0, { timeout: 20_000 });
+    await expect(programs.rowFor(toKeep)).toBeVisible();
 
-    const rowsAfter = await programsTable(page).getByRole("row").count();
+    const rowsAfter = await programs.programsTable.getByRole("row").count();
     expect(rowsAfter).toBe(rowsBefore - 1);
     await expect(page).toHaveURL(/\/programs/);
   });
@@ -90,13 +88,14 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
   }) => {
     const suffix = uniqueSuffix();
     const name = `${PROGRAM_NAME_SEED} ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, name, `${PROGRAM_DESC_SEED} ${suffix}`);
+    await programs.triggerDeleteConfirm(name, { accept: false });
+    await expect(programs.rowFor(name)).toBeVisible();
 
-    await deleteProgramWithConfirm(page, name, { accept: false });
-    await expectProgramPresent(page, name);
-
-    await openDeleteConfirmDialog(page, name);
-    await expectProgramPresent(page, name);
+    await programs.triggerDeleteConfirm(name, { accept: false });
+    await expect(programs.rowFor(name)).toBeVisible();
   });
 
   test("TC-006: unauthorized user cannot delete a program", async ({ page }) => {
@@ -106,20 +105,19 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     );
     const suffix = uniqueSuffix();
     const name = `${PROGRAM_NAME_SEED} ${suffix}`;
+    const programs = new ProgramsPage(page);
+    const login = new LoginPage(page);
+
     await createProgram(page, name, `${PROGRAM_DESC_SEED} ${suffix}`);
-
     await clearSessionForUiLogin(page);
-    await page
-      .getByLabel("Email")
-      .fill(process.env.DIDAXIS_NONADMIN_EMAIL!);
-    await page
-      .getByLabel("Password")
-      .fill(process.env.DIDAXIS_NONADMIN_PASSWORD!);
-    await page.getByRole("button", { name: "Sign In" }).click();
-    await gotoProgramsPage(page);
+    await login.signIn(
+      process.env.DIDAXIS_NONADMIN_EMAIL!,
+      process.env.DIDAXIS_NONADMIN_PASSWORD!,
+    );
+    await programs.goto();
+    await expect(programs.heading).toBeVisible();
 
-    const row = programRow(page, name);
-    const deleteBtn = deleteButtonInRow(row, name);
+    const deleteBtn = programs.deleteButtonFor(name);
     const visible = await deleteBtn.isVisible().catch(() => false);
     if (visible) {
       const deleteRequests: string[] = [];
@@ -137,7 +135,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
       await page.waitForTimeout(2000);
       expect(deleteRequests.length).toBe(0);
     }
-    await expectProgramPresent(page, name);
+    await expect(programs.rowFor(name)).toBeVisible();
   });
 
   test("TC-007: program stays in the list when delete API fails after OK", async ({
@@ -145,6 +143,8 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
   }) => {
     const suffix = uniqueSuffix();
     const name = `Test Program ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, name, `API failure delete test ${suffix}`);
 
     await page.route("**/programs/**", async (route) => {
@@ -155,45 +155,49 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
       await route.continue();
     });
 
-    await deleteProgramWithConfirm(page, name);
-    await expectProgramPresent(page, name);
+    await programs.triggerDeleteConfirm(name);
+    await expect(programs.rowFor(name)).toBeVisible();
   });
 
   // Product bug DS-52: rapid double-click blocks delete flow
   test(
     "TC-008: rapid double-click on delete does not cause duplicate DELETE requests",
     async ({ page }) => {
-    const suffix = uniqueSuffix();
-    const name = `${PROGRAM_NAME_SEED} ${suffix}`;
-    await createProgram(page, name, `${PROGRAM_DESC_SEED} ${suffix}`);
+      const suffix = uniqueSuffix();
+      const name = `${PROGRAM_NAME_SEED} ${suffix}`;
+      const programs = new ProgramsPage(page);
 
-    const deleteUrls: string[] = [];
-    page.on("request", (req) => {
-      if (req.method() === "DELETE" && /program/i.test(req.url())) {
-        deleteUrls.push(req.url());
-      }
-    });
+      await createProgram(page, name, `${PROGRAM_DESC_SEED} ${suffix}`);
 
-    const row = programRow(page, name);
-    const deleteBtn = deleteButtonInRow(row, name);
-    const dialogMessages: string[] = [];
-    page.on("dialog", async (d) => {
-      dialogMessages.push(d.message());
-      await d.accept();
-    });
-    await deleteBtn.click();
-    await deleteBtn.click().catch(() => {});
+      const deleteUrls: string[] = [];
+      page.on("request", (req) => {
+        if (req.method() === "DELETE" && /program/i.test(req.url())) {
+          deleteUrls.push(req.url());
+        }
+      });
 
-    await expectProgramAbsent(page, name);
-    expect(deleteUrls.length).toBeLessThanOrEqual(1);
-    expect(dialogMessages.length).toBeLessThanOrEqual(1);
-  });
+      const deleteBtn = programs.deleteButtonFor(name);
+      const dialogMessages: string[] = [];
+      page.on("dialog", async (d) => {
+        dialogMessages.push(d.message());
+        await d.accept();
+      });
+      await deleteBtn.click();
+      await deleteBtn.click().catch(() => {});
+
+      await expect(programs.rowFor(name)).toHaveCount(0, { timeout: 20_000 });
+      expect(deleteUrls.length).toBeLessThanOrEqual(1);
+      expect(dialogMessages.length).toBeLessThanOrEqual(1);
+    },
+  );
 
   test("TC-009: deleting a program that no longer exists is handled safely", async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
     const name = `Test Program ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, name, `Stale delete test ${suffix}`);
 
     let deleteCount = 0;
@@ -201,16 +205,19 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
       if (route.request().method() === "DELETE") {
         deleteCount += 1;
         if (deleteCount === 1) {
-          await route.fulfill({ status: 404, body: JSON.stringify({ error: "Not found" }) });
+          await route.fulfill({
+            status: 404,
+            body: JSON.stringify({ error: "Not found" }),
+          });
           return;
         }
       }
       await route.continue();
     });
 
-    await deleteProgramWithConfirm(page, name);
+    await programs.triggerDeleteConfirm(name);
     await page.waitForTimeout(1500);
-    const stillVisible = (await programRow(page, name).count()) > 0;
+    const stillVisible = (await programs.countRows(name)) > 0;
     const hasError = await page
       .getByText(/not found|error|failed/i)
       .isVisible()
@@ -223,15 +230,17 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
   }) => {
     const suffix = uniqueSuffix();
     const name = `Informatique & IA - Niveau 2 ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(
       page,
       name,
       `Programme bilingue — parcours Informatique et IA ${suffix}`,
     );
 
-    const dialog = await triggerDeleteConfirm(page, name, { accept: true });
+    const dialog = await programs.triggerDeleteConfirm(name);
     expect(dialog.message).toContain("Informatique & IA - Niveau 2");
-    await expectProgramAbsent(page, name);
+    await expect(programs.rowFor(name)).toHaveCount(0, { timeout: 20_000 });
   });
 
   test("TC-011: program with maximum-length name (100 characters) is deleted", async ({
@@ -239,10 +248,11 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
   }) => {
     const suffix = uniqueSuffix();
     const name = `${MAX_NAME_100.slice(0, 88)}${suffix}`.slice(0, 100);
-    await createProgram(page, name, `Max length delete test ${suffix}`);
+    const programs = new ProgramsPage(page);
 
-    await deleteProgramWithConfirm(page, name);
-    await expectProgramAbsent(page, name);
+    await createProgram(page, name, `Max length delete test ${suffix}`);
+    await programs.triggerDeleteConfirm(name);
+    await expect(programs.rowFor(name)).toHaveCount(0, { timeout: 20_000 });
   });
 
   test("TC-012: deleting the last program shows the empty state", async ({
@@ -250,9 +260,11 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
   }) => {
     const suffix = uniqueSuffix();
     const name = `Test Program ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, name, `Last program empty state ${suffix}`);
 
-    const dataRows = await programsTable(page)
+    const dataRows = await programs.programsTable
       .getByRole("row")
       .filter({ has: page.getByRole("paragraph") })
       .count();
@@ -260,7 +272,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
       test.skip(true, "Other programs exist in org; cannot assert sole-program empty state");
     }
 
-    await deleteProgramWithConfirm(page, name);
+    await programs.triggerDeleteConfirm(name);
     await expect(page.getByText(EMPTY_PROGRAMS_MESSAGE)).toBeVisible({
       timeout: 20_000,
     });
@@ -271,12 +283,13 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
   }) => {
     const suffix = uniqueSuffix();
     const name = `Test Program ${suffix}`;
-    await createProgram(page, name, `Refresh persistence ${suffix}`);
+    const programs = new ProgramsPage(page);
 
-    await deleteProgramWithConfirm(page, name);
-    await page.reload();
-    await expect(page.getByRole("heading", { name: "Programs" })).toBeVisible();
-    await expectProgramAbsent(page, name);
+    await createProgram(page, name, `Refresh persistence ${suffix}`);
+    await programs.triggerDeleteConfirm(name);
+    await programs.reload();
+    await expect(programs.heading).toBeVisible();
+    await expect(programs.rowFor(name)).toHaveCount(0, { timeout: 20_000 });
   });
 
   test("TC-014: only the targeted program row is deleted when multiple exist", async ({
@@ -285,12 +298,14 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     const suffix = uniqueSuffix();
     const keep = `${PROGRAM_NAME_SEED} ${suffix}`;
     const remove = `Data Science 2026 ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, keep, `${PROGRAM_DESC_SEED} ${suffix}`);
     await createProgram(page, remove, `Data science cohort ${suffix}`);
 
-    await deleteProgramWithConfirm(page, remove);
-    await expectProgramAbsent(page, remove);
-    await expectProgramPresent(page, keep);
+    await programs.triggerDeleteConfirm(remove);
+    await expect(programs.rowFor(remove)).toHaveCount(0, { timeout: 20_000 });
+    await expect(programs.rowFor(keep)).toBeVisible();
   });
 
   test("TC-015: confirmation dialog warns about cascade deletion", async ({
@@ -298,12 +313,14 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
   }) => {
     const suffix = uniqueSuffix();
     const name = `${PROGRAM_NAME_SEED} ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, name, `${PROGRAM_DESC_SEED} ${suffix}`);
 
-    const dialog = await openDeleteConfirmDialog(page, name);
+    const dialog = await programs.triggerDeleteConfirm(name, { accept: false });
     expect(dialog.message).toMatch(/semesters and courses will be removed/i);
     expect(dialog.message).toMatch(/cannot be undone/i);
-    await expectProgramPresent(page, name);
+    await expect(programs.rowFor(name)).toBeVisible();
   });
 
   test("TC-016: multiple sequential deletions update the list after each confirm", async ({
@@ -313,21 +330,23 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     const a = `Test Program A ${suffix}`;
     const b = `Test Program B ${suffix}`;
     const c = `Test Program C ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, a, `Seq delete A ${suffix}`);
     await createProgram(page, b, `Seq delete B ${suffix}`);
     await createProgram(page, c, `Seq delete C ${suffix}`);
 
-    await deleteProgramWithConfirm(page, a);
-    await expectProgramAbsent(page, a);
-    await expectProgramPresent(page, b);
-    await expectProgramPresent(page, c);
+    await programs.triggerDeleteConfirm(a);
+    await expect(programs.rowFor(a)).toHaveCount(0, { timeout: 20_000 });
+    await expect(programs.rowFor(b)).toBeVisible();
+    await expect(programs.rowFor(c)).toBeVisible();
 
-    await deleteProgramWithConfirm(page, b);
-    await expectProgramAbsent(page, b);
-    await expectProgramPresent(page, c);
+    await programs.triggerDeleteConfirm(b);
+    await expect(programs.rowFor(b)).toHaveCount(0, { timeout: 20_000 });
+    await expect(programs.rowFor(c)).toBeVisible();
 
-    await deleteProgramWithConfirm(page, c);
-    await expectProgramAbsent(page, c);
+    await programs.triggerDeleteConfirm(c);
+    await expect(programs.rowFor(c)).toHaveCount(0, { timeout: 20_000 });
   });
 
   test("TC-017: delete control is present on each program row", async ({
@@ -339,17 +358,19 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
       `Test Program Y ${suffix}`,
       `Test Program Z ${suffix}`,
     ];
+    const programs = new ProgramsPage(page);
+
     for (const n of names) {
       await createProgram(page, n, `Row delete affordance ${suffix}`);
     }
 
     for (const n of names) {
-      await expect(deleteButtonInRow(programRow(page, n), n)).toBeVisible();
+      await expect(programs.deleteButtonFor(n)).toBeVisible();
     }
 
-    await deleteProgramWithConfirm(page, names[0], { accept: false });
+    await programs.triggerDeleteConfirm(names[0], { accept: false });
     for (const n of names) {
-      await expectProgramPresent(page, n);
+      await expect(programs.rowFor(n)).toBeVisible();
     }
   });
 
@@ -359,13 +380,16 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     const suffix = uniqueSuffix();
     const editing = `${PROGRAM_NAME_SEED} ${suffix}`;
     const target = `Data Science 2026 ${suffix}`;
+    const programs = new ProgramsPage(page);
+    const editModal = programs.editProgramModal;
+
     await createProgram(page, editing, `${PROGRAM_DESC_SEED} ${suffix}`);
     await createProgram(page, target, `Interaction boundary ${suffix}`);
 
-    const editDialog = await openEditModal(page, editing);
-    await expect(editDialog).toBeVisible();
+    await programs.openEditFor(editing);
+    await expect(editModal.dialog).toBeVisible();
 
-    const deleteBtn = deleteButtonInRow(programRow(page, target), target);
+    const deleteBtn = programs.deleteButtonFor(target);
     const canDeleteWhileEditOpen = await deleteBtn
       .isVisible()
       .then(async (v) => {
@@ -383,12 +407,12 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
       .catch(() => false);
 
     if (canDeleteWhileEditOpen) {
-      await expect(editDialog).toBeVisible();
-      await expectProgramPresent(page, target);
-      await expectProgramPresent(page, editing);
+      await expect(editModal.dialog).toBeVisible();
+      await expect(programs.rowFor(target)).toBeVisible();
+      await expect(programs.rowFor(editing)).toBeVisible();
     } else {
-      await expect(editDialog).toBeVisible();
-      await expectProgramPresent(page, target);
+      await expect(editModal.dialog).toBeVisible();
+      await expect(programs.rowFor(target)).toBeVisible();
     }
   });
 });

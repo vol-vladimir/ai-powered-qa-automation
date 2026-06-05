@@ -1,29 +1,23 @@
 import { test, expect } from "../fixtures/cleanup.fixture";
+import { LoginPage } from "../pages/login.page";
+import { ProgramsPage } from "../pages/programs.page";
 import {
-  EMPTY_PROGRAMS_MESSAGE,
   MAX_NAME_100,
   PROGRAM_DESC_SEED,
   PROGRAM_NAME_SEED,
-  clearSessionForUiLogin,
-  createProgram,
-  createProgramFromEmptyState,
-  emptyProgramsMessage,
-  ensureSeedProgramExists,
-  expectCreateModalClosed,
-  expectProgramListDetails,
-  gotoProgramsPage,
-  nameFieldInDialog,
-  newProgramDialog,
-  openNewProgramModal,
-  submitNewProgram,
-  programRow,
-  programsTable,
   uniqueSuffix,
-} from "./helpers/didaxis-programs";
+} from "../support/program-constants";
+import {
+  createProgram,
+  ensureSeedProgramExists,
+} from "../support/program-factory";
+import { clearSessionForUiLogin } from "../support/session";
 
 test.describe("Didaxis Studio — program list display (DS-5)", () => {
   test.beforeEach(async ({ page }) => {
-    await gotoProgramsPage(page);
+    const programs = new ProgramsPage(page);
+    await programs.goto();
+    await expect(programs.heading).toBeVisible();
   });
 
   test("TC-001: programs table lists each program with name and description", async ({
@@ -34,37 +28,45 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     const desc1 = `${PROGRAM_DESC_SEED} ${suffix}`;
     const name2 = `Data Science 2026 ${suffix}`;
     const desc2 = `Applied statistics and machine learning cohort ${suffix}`;
+    const programs = new ProgramsPage(page);
 
     await createProgram(page, name1, desc1);
     await createProgram(page, name2, desc2);
 
-    await expectProgramListDetails(page, name1, desc1);
-    await expectProgramListDetails(page, name2, desc2);
+    for (const [name, desc] of [
+      [name1, desc1],
+      [name2, desc2],
+    ] as const) {
+      await expect(programs.rowFor(name)).toBeVisible();
+      await expect(programs.nameInRow(name)).toHaveText(name);
+      await expect(programs.descriptionInRow(name)).toHaveText(desc);
+    }
   });
-
-  async function orgHasPrograms(page: import("@playwright/test").Page) {
-    return (await page.getByRole("button", { name: /^Delete / }).count()) > 0;
-  }
 
   test("TC-002: empty state message and create prompt appear when no programs exist", async ({
     page,
   }) => {
+    const programs = new ProgramsPage(page);
     test.skip(
-      await orgHasPrograms(page),
+      await programs.orgHasPrograms(),
       "Organization has existing programs; empty-state test needs isolated org with zero programs",
     );
 
-    await expect(emptyProgramsMessage(page)).toBeVisible();
-    await expect(createProgramFromEmptyState(page)).toBeVisible();
+    await expect(programs.emptyStateMessage).toBeVisible();
+    await expect(programs.createProgramEmptyStateButton).toBeVisible();
   });
 
   test("TC-003: empty-state create prompt opens the New Program flow", async ({
     page,
   }) => {
-    test.skip(await orgHasPrograms(page), "Requires zero programs in organization");
+    const programs = new ProgramsPage(page);
+    test.skip(
+      await programs.orgHasPrograms(),
+      "Requires zero programs in organization",
+    );
 
-    await createProgramFromEmptyState(page).click();
-    await expect(newProgramDialog(page)).toBeVisible();
+    await programs.createProgramEmptyStateButton.click();
+    await expect(programs.newProgramModal.dialog).toBeVisible();
   });
 
   test("TC-004: programs list remains visible after page reload", async ({
@@ -73,19 +75,23 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     const suffix = uniqueSuffix();
     const name = `${PROGRAM_NAME_SEED} reload ${suffix}`;
     const desc = `${PROGRAM_DESC_SEED} reload ${suffix}`;
-    await createProgram(page, name, desc);
+    const programs = new ProgramsPage(page);
 
-    await page.reload();
-    await expect(page.getByRole("heading", { name: "Programs" })).toBeVisible();
-    await expectProgramListDetails(page, name, desc);
+    await createProgram(page, name, desc);
+    await programs.reload();
+    await expect(programs.heading).toBeVisible();
+    await expect(programs.rowFor(name)).toBeVisible();
+    await expect(programs.nameInRow(name)).toHaveText(name);
+    await expect(programs.descriptionInRow(name)).toHaveText(desc);
   });
 
   test("TC-005: empty-state message is not shown when programs exist", async ({
     page,
   }) => {
+    const programs = new ProgramsPage(page);
     await ensureSeedProgramExists(page);
-    await expect(programsTable(page).getByRole("row").nth(1)).toBeVisible();
-    await expect(emptyProgramsMessage(page)).toHaveCount(0);
+    await expect(programs.programsTable.getByRole("row").nth(1)).toBeVisible();
+    await expect(programs.emptyStateMessage).toHaveCount(0);
   });
 
   test("TC-006: program name and description columns are not blank", async ({
@@ -94,11 +100,13 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     const suffix = uniqueSuffix();
     const name = `${PROGRAM_NAME_SEED} ${suffix}`;
     const desc = `${PROGRAM_DESC_SEED} ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, name, desc);
 
-    const row = programRow(page, name);
+    const row = programs.rowFor(name);
     await expect(row.getByRole("paragraph").first()).not.toBeEmpty();
-    await expect(row.getByRole("paragraph").nth(1)).toHaveText(desc);
+    await expect(programs.descriptionInRow(name)).toHaveText(desc);
   });
 
   test("TC-007: API failure does not show empty state when programs exist", async ({
@@ -106,6 +114,8 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
   }) => {
     const suffix = uniqueSuffix();
     const name = `API error list test ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, name, `Programs API error probe ${suffix}`);
 
     await page.route("**/programs**", async (route) => {
@@ -116,10 +126,10 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
       await route.continue();
     });
 
-    await page.reload();
+    await programs.reload();
     await page.waitForTimeout(2000);
 
-    const showsEmptyState = await emptyProgramsMessage(page)
+    const showsEmptyState = await programs.emptyStateMessage
       .isVisible()
       .catch(() => false);
     const showsError = await page
@@ -142,20 +152,22 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
       "Set DIDAXIS_NONADMIN_EMAIL and DIDAXIS_NONADMIN_PASSWORD to run",
     );
 
-    await clearSessionForUiLogin(page);
-    await page.getByLabel("Email").fill(process.env.DIDAXIS_NONADMIN_EMAIL!);
-    await page
-      .getByLabel("Password")
-      .fill(process.env.DIDAXIS_NONADMIN_PASSWORD!);
-    await page.getByRole("button", { name: "Sign In" }).click();
-    await gotoProgramsPage(page);
+    const programs = new ProgramsPage(page);
+    const login = new LoginPage(page);
 
-    const newProgram = page.getByRole("button", { name: "+ New Program" });
-    const visible = await newProgram.isVisible().catch(() => false);
+    await clearSessionForUiLogin(page);
+    await login.signIn(
+      process.env.DIDAXIS_NONADMIN_EMAIL!,
+      process.env.DIDAXIS_NONADMIN_PASSWORD!,
+    );
+    await programs.goto();
+    await expect(programs.heading).toBeVisible();
+
+    const visible = await programs.newProgramButton.isVisible().catch(() => false);
     if (visible) {
-      await expect(newProgram).toBeDisabled();
+      await expect(programs.newProgramButton).toBeDisabled();
     } else {
-      await expect(newProgram).toHaveCount(0);
+      await expect(programs.newProgramButton).toHaveCount(0);
     }
   });
 
@@ -165,8 +177,12 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     const suffix = uniqueSuffix();
     const name = `Informatique & IA - Niveau 2 ${suffix}`;
     const desc = `Programme bilingue — parcours Informatique et IA ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, name, desc);
-    await expectProgramListDetails(page, name, desc);
+    await expect(programs.rowFor(name)).toBeVisible();
+    await expect(programs.nameInRow(name)).toHaveText(name);
+    await expect(programs.descriptionInRow(name)).toHaveText(desc);
   });
 
   test("TC-010: maximum-length program name displays without breaking layout", async ({
@@ -175,9 +191,12 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     const suffix = uniqueSuffix();
     const name = `${MAX_NAME_100.slice(0, 88)}${suffix}`.slice(0, 100);
     const desc = `Max length list display ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, name, desc);
-    await expect(programRow(page, name)).toBeVisible();
-    await expectProgramListDetails(page, name, desc);
+    await expect(programs.rowFor(name)).toBeVisible();
+    await expect(programs.nameInRow(name)).toHaveText(name);
+    await expect(programs.descriptionInRow(name)).toHaveText(desc);
   });
 
   // Product bug DS-53: empty Description omits description paragraph in list row
@@ -186,15 +205,17 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
   }) => {
     const suffix = uniqueSuffix();
     const name = `Cloud Fundamentals ${suffix}`;
+    const programs = new ProgramsPage(page);
+    const modal = programs.newProgramModal;
 
-    const dialog = await openNewProgramModal(page);
-    await nameFieldInDialog(dialog).fill(name);
-    await submitNewProgram(dialog, page);
-    await expectCreateModalClosed(dialog);
+    await programs.openNewProgram();
+    await modal.fillName(name);
+    await modal.submit();
+    await expect(modal.dialog).toBeHidden({ timeout: 20_000 });
 
-    const row = programRow(page, name);
+    const row = programs.rowFor(name);
     await expect(row).toBeVisible();
-    await expect(row.getByRole("paragraph").first()).toHaveText(name);
+    await expect(programs.nameInRow(name)).toHaveText(name);
     // DS-5 AC: list shows name AND description; empty Description should still expose description cell
     await expect(
       row.getByRole("paragraph"),
@@ -208,8 +229,12 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     const suffix = uniqueSuffix();
     const name = `Développement Logiciel 🚀 ${suffix}`;
     const desc = `Parcours avancé en génie logiciel et qualité ${suffix}`;
+    const programs = new ProgramsPage(page);
+
     await createProgram(page, name, desc);
-    await expectProgramListDetails(page, name, desc);
+    await expect(programs.rowFor(name)).toBeVisible();
+    await expect(programs.nameInRow(name)).toHaveText(name);
+    await expect(programs.descriptionInRow(name)).toHaveText(desc);
   });
 
   test("TC-013: multiple programs are all visible in the table", async ({
@@ -223,21 +248,23 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
       `List smoke D ${suffix}`,
       `List smoke E ${suffix}`,
     ];
+    const programs = new ProgramsPage(page);
+
     for (const n of names) {
       await createProgram(page, n, `Smoke list ${n}`);
     }
     for (const n of names) {
-      await expect(programRow(page, n)).toBeVisible();
+      await expect(programs.rowFor(n)).toBeVisible();
     }
   });
 
   test("TC-014: header + New Program is available when programs exist", async ({
     page,
   }) => {
+    const programs = new ProgramsPage(page);
     await ensureSeedProgramExists(page);
-    const btn = page.getByRole("button", { name: "+ New Program" });
-    await expect(btn).toBeVisible();
-    await btn.click();
-    await expect(newProgramDialog(page)).toBeVisible();
+    await expect(programs.newProgramButton).toBeVisible();
+    await programs.openNewProgram();
+    await expect(programs.newProgramModal.dialog).toBeVisible();
   });
 });
