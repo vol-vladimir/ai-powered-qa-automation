@@ -4,6 +4,7 @@ import {
   MAX_NAME_100,
   PROGRAM_DESC_SEED,
   PROGRAM_NAME_SEED,
+  clearSessionForUiLogin,
   createProgram,
   createProgramFromEmptyState,
   emptyProgramsMessage,
@@ -11,7 +12,6 @@ import {
   expectCreateModalClosed,
   expectProgramListDetails,
   gotoProgramsPage,
-  loginAsAdmin,
   nameFieldInDialog,
   newProgramDialog,
   openNewProgramModal,
@@ -23,7 +23,6 @@ import {
 
 test.describe("Didaxis Studio — program list display (DS-5)", () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
     await gotoProgramsPage(page);
   });
 
@@ -143,8 +142,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
       "Set DIDAXIS_NONADMIN_EMAIL and DIDAXIS_NONADMIN_PASSWORD to run",
     );
 
-    await page.context().clearCookies();
-    await page.goto("/login");
+    await clearSessionForUiLogin(page);
     await page.getByLabel("Email").fill(process.env.DIDAXIS_NONADMIN_EMAIL!);
     await page
       .getByLabel("Password")

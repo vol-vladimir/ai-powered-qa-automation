@@ -1,4 +1,5 @@
 .env
+.auth/
 .playwright-mcp/
 programs-page.yml
 node_modules/

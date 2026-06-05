@@ -9,7 +9,6 @@ import {
   expandAiConfigIfCollapsed,
   fillNewProgramForm,
   gotoProgramsPage,
-  loginAsAdmin,
   nameFieldInDialog,
   newProgramDialog,
   openNewProgramModal,
@@ -23,7 +22,6 @@ const AC_DESCRIPTION = "Full-stack web development program";
 
 test.describe("Didaxis Studio — create new academic program (DS-1)", () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
     await gotoProgramsPage(page);
   });
 

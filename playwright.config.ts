@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { defineConfig, devices } from "@playwright/test";
+import { ADMIN_AUTH_FILE } from "./support/auth-state";
 
 export default defineConfig({
   testDir: "./tests",
@@ -17,8 +18,17 @@ export default defineConfig({
   },
   projects: [
     {
+      name: "setup",
+      testMatch: /auth\.setup\.ts/,
+    },
+    {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: ADMIN_AUTH_FILE,
+      },
+      dependencies: ["setup"],
+      testIgnore: /auth\.setup\.ts/,
     },
   ],
 });

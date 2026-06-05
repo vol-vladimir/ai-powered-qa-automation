@@ -1,4 +1,6 @@
 import { test, expect } from "../fixtures/cleanup.fixture";
+import { ADMIN_AUTH_FILE } from "../support/auth-state";
+import { registerProgramCreateTracking } from "../support/register-program-create-tracking";
 import {
   PROGRAM_DESC_SEED,
   PROGRAM_NAME_MAX_LENGTH,
@@ -17,7 +19,6 @@ import {
   expectSaveBlocked,
   expectUnsafeNameRejected,
   gotoProgramsPage,
-  loginAsAdmin,
   openEditModal,
   programRow,
   saveEditDialog,
@@ -26,7 +27,6 @@ import {
 
 test.describe("Didaxis Studio — edit program (DS-2)", () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
     await gotoProgramsPage(page);
   });
 
@@ -327,14 +327,14 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     const nameFromA = `Web Development 2026 - A ${suffix}`;
     const descFromB = `Description from admin B ${suffix}`;
 
-    const contextA = await browser.newContext();
-    const contextB = await browser.newContext();
+    const contextA = await browser.newContext({ storageState: ADMIN_AUTH_FILE });
+    const contextB = await browser.newContext({ storageState: ADMIN_AUTH_FILE });
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
+    registerProgramCreateTracking(pageA);
+    registerProgramCreateTracking(pageB);
 
     try {
-      await loginAsAdmin(pageA);
-      await loginAsAdmin(pageB);
       await gotoProgramsPage(pageA);
       await createProgram(pageA, baseName, description);
 

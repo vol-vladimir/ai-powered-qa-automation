@@ -1,4 +1,6 @@
 import { test, expect } from "../fixtures/cleanup.fixture";
+import { ADMIN_AUTH_FILE } from "../support/auth-state";
+import { registerProgramCreateTracking } from "../support/register-program-create-tracking";
 import {
   PROGRAM_NAME_MAX_LENGTH,
   PROGRAM_NAME_SEED,
@@ -12,7 +14,6 @@ import {
   expectDuplicateCreateRejected,
   fillNewProgramForm,
   gotoProgramsPage,
-  loginAsAdmin,
   nameFieldInDialog,
   newProgramDialog,
   openNewProgramModal,
@@ -26,7 +27,6 @@ const MAX_NAME_100 = "M".repeat(PROGRAM_NAME_MAX_LENGTH);
 
 test.describe("Didaxis Studio — create program name validation (DS-3)", () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
     await gotoProgramsPage(page);
   });
 
@@ -279,14 +279,14 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     const name = `Cloud Engineering 2026 ${suffix}`;
     const description = `Concurrent create base ${suffix}`;
 
-    const contextA = await browser.newContext();
-    const contextB = await browser.newContext();
+    const contextA = await browser.newContext({ storageState: ADMIN_AUTH_FILE });
+    const contextB = await browser.newContext({ storageState: ADMIN_AUTH_FILE });
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
+    registerProgramCreateTracking(pageA);
+    registerProgramCreateTracking(pageB);
 
     try {
-      await loginAsAdmin(pageA);
-      await loginAsAdmin(pageB);
       await gotoProgramsPage(pageA);
       await gotoProgramsPage(pageB);
 

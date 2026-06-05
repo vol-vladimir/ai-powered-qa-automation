@@ -2,13 +2,13 @@ import { test, expect } from "../fixtures/cleanup.fixture";
 import {
   PROGRAM_DESC_SEED,
   PROGRAM_NAME_SEED,
+  clearSessionForUiLogin,
   createProgram,
   deleteButtonInRow,
   deleteProgramWithConfirm,
   EMPTY_PROGRAMS_MESSAGE,
   expectedDeleteConfirmMessage,
   gotoProgramsPage,
-  loginAsAdmin,
   MAX_NAME_100,
   openEditModal,
   programRow,
@@ -22,7 +22,6 @@ import {
 
 test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
     await gotoProgramsPage(page);
   });
 
@@ -109,8 +108,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     const name = `${PROGRAM_NAME_SEED} ${suffix}`;
     await createProgram(page, name, `${PROGRAM_DESC_SEED} ${suffix}`);
 
-    await page.context().clearCookies();
-    await page.goto("/login");
+    await clearSessionForUiLogin(page);
     await page
       .getByLabel("Email")
       .fill(process.env.DIDAXIS_NONADMIN_EMAIL!);

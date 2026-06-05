@@ -3,7 +3,6 @@ import {
   createProgramViaApi,
   loginViaApiPage,
 } from "../../support/didaxis-api";
-import { registerProgramCreateTracking } from "../../support/register-program-create-tracking";
 import { trackProgram } from "../../support/program-tracker";
 
 export const PROGRAM_NAME_SEED = "Web Development 2026";
@@ -468,8 +467,18 @@ export async function loginAsAdmin(page: Page) {
     );
   }
 
-  registerProgramCreateTracking(page);
   await loginViaApiPage(page);
+}
+
+/** Clears reused admin storage state so a test can sign in through the login UI. */
+export async function clearSessionForUiLogin(page: Page) {
+  await page.context().clearCookies();
+  await page.goto("/login");
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+  await page.reload();
 }
 
 export async function gotoProgramsPage(page: Page) {
