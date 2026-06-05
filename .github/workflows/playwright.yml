@@ -12,11 +12,11 @@ jobs:
     environment: dev1
     env:
       CI: true
-      DIDAXIS_URL: ${{ vars.DIDAXIS_URL }}
-      DIDAXIS_EMAIL: ${{ vars.DIDAXIS_EMAIL }}
+      DIDAXIS_URL: ${{ secrets.DIDAXIS_URL }}
+      DIDAXIS_EMAIL: ${{ secrets.DIDAXIS_EMAIL }}
       DIDAXIS_API_TOKEN: ${{ secrets.DIDAXIS_API_TOKEN }}
       DIDAXIS_PASSWORD: ${{ secrets.DIDAXIS_PASSWORD }}
-      DIDAXIS_NONADMIN_EMAIL: ${{ vars.DIDAXIS_NONADMIN_EMAIL }}
+      DIDAXIS_NONADMIN_EMAIL: ${{ secrets.DIDAXIS_NONADMIN_EMAIL }}
       DIDAXIS_NONADMIN_PASSWORD: ${{ secrets.DIDAXIS_NONADMIN_PASSWORD }}
     steps:
       - name: Checkout repository
