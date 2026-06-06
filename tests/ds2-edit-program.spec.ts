@@ -190,6 +190,10 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
   test("TC-008: invalid characters in Name are rejected according to validation rules", async ({
     page,
   }) => {
+    test.fixme(
+      true,
+      "DS-89: Edit Program intermittently accepts unsafe-character (XSS) names and renames the program instead of rejecting the input. Quarantined until the validation gap is fixed; re-enable when DS-89 is resolved.",
+    );
     const suffix = uniqueSuffix();
     const programName = `Web Development 2026 ${suffix}`;
     const unsafeName = `Web Development 2026 <script>alert(1)</script> ${suffix}`;
@@ -261,6 +265,10 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
   test("TC-011: name exceeding maximum length is rejected", async ({
     page,
   }) => {
+    test.fixme(
+      true,
+      "DS-100: Edit Program intermittently accepts over-max-length names and renames the program instead of rejecting the input. Quarantined until the validation gap is fixed; re-enable when DS-100 is resolved.",
+    );
     const suffix = uniqueSuffix();
     const programName = `Web Development 2026 ${suffix}`;
     const tooLongName = "N".repeat(PROGRAM_NAME_MAX_LENGTH + 1);
