@@ -114,22 +114,24 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(programs.heading).toBeVisible();
 
     const deleteBtn = programs.deleteButtonFor(name);
-    const visible = await deleteBtn.isVisible().catch(() => false);
-    if (visible) {
+    if ((await deleteBtn.count()) > 0) {
       const deleteRequests: string[] = [];
       page.on("request", (req) => {
         if (req.method() === "DELETE" && /program/i.test(req.url())) {
           deleteRequests.push(req.url());
         }
       });
-      const dialogPromise = page.waitForEvent("dialog").catch(() => null);
+      const dialogCaptured = new Promise<void>((resolve) => {
+        page.once("dialog", async (dialog) => {
+          await dialog.accept();
+          resolve();
+        });
+      });
       await deleteBtn.click();
-      const dialog = await dialogPromise;
-      if (dialog) {
-        await dialog.accept();
-      }
-      await page.waitForTimeout(2000);
-      expect(deleteRequests.length).toBe(0);
+      await dialogCaptured;
+      await expect.poll(() => deleteRequests.length).toBe(0);
+    } else {
+      await expect(deleteBtn).toHaveCount(0);
     }
     await expect(programs.rowFor(name)).toBeVisible();
   });
@@ -216,13 +218,9 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     });
 
     await programs.triggerDeleteConfirm(name);
-    await page.waitForTimeout(1500);
-    const stillVisible = (await programs.countRows(name)) > 0;
-    const hasError = await programs
-      .notFoundOrErrorMessage()
-      .isVisible()
-      .catch(() => false);
-    expect(stillVisible || hasError).toBeTruthy();
+    await expect(
+      programs.notFoundOrErrorMessage().or(programs.rowFor(name)),
+    ).toBeVisible();
   });
 
   test("TC-010: program with special characters in name is deleted successfully", async ({
@@ -387,29 +385,13 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(editModal.dialog).toBeVisible();
 
     const deleteBtn = programs.deleteButtonFor(target);
-    const canDeleteWhileEditOpen = await deleteBtn
-      .isVisible()
-      .then(async (v) => {
-        if (!v) return false;
-        const dialogPromise = page
-          .waitForEvent("dialog", { timeout: 3000 })
-          .catch(() => null);
-        await deleteBtn.click({ force: true });
-        const dialog = await dialogPromise;
-        if (dialog) {
-          await dialog.dismiss();
-        }
-        return true;
-      })
-      .catch(() => false);
-
-    if (canDeleteWhileEditOpen) {
-      await expect(editModal.dialog).toBeVisible();
-      await expect(programs.rowFor(target)).toBeVisible();
-      await expect(programs.rowFor(editing)).toBeVisible();
-    } else {
-      await expect(editModal.dialog).toBeVisible();
-      await expect(programs.rowFor(target)).toBeVisible();
+    page.once("dialog", (dialog) => void dialog.dismiss());
+    if ((await deleteBtn.count()) > 0) {
+      await deleteBtn.click({ force: true, timeout: 5_000 }).catch(() => {});
     }
+
+    await expect(editModal.dialog).toBeVisible();
+    await expect(programs.rowFor(target)).toBeVisible();
+    await expect(programs.rowFor(editing)).toBeVisible();
   });
 });

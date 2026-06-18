@@ -170,30 +170,31 @@ export class ProgramsPage extends BasePage {
     options?: { accept?: boolean },
   ): Promise<DeleteConfirmCapture> {
     const accept = options?.accept ?? true;
-    let captured: DeleteConfirmCapture | null = null;
 
-    this.page.once("dialog", async (dialog) => {
-      captured = {
-        type: dialog.type(),
-        message: dialog.message(),
-        accepted: accept,
-      };
-      if (accept) {
-        await dialog.accept();
-      } else {
-        await dialog.dismiss();
-      }
+    const dialogCaptured = new Promise<DeleteConfirmCapture>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(
+          new Error(`Delete confirm dialog did not appear for "${programName}"`),
+        );
+      }, 10_000);
+
+      this.page.once("dialog", async (dialog) => {
+        clearTimeout(timeoutId);
+        const captured: DeleteConfirmCapture = {
+          type: dialog.type(),
+          message: dialog.message(),
+          accepted: accept,
+        };
+        if (accept) {
+          await dialog.accept();
+        } else {
+          await dialog.dismiss();
+        }
+        resolve(captured);
+      });
     });
 
     await this.deleteButtonFor(programName).click();
-
-    const deadline = Date.now() + 10_000;
-    while (!captured && Date.now() < deadline) {
-      await this.page.waitForTimeout(50);
-    }
-    if (!captured) {
-      throw new Error(`Delete confirm dialog did not appear for "${programName}"`);
-    }
-    return captured;
+    return dialogCaptured;
   }
 }
