@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/vol-vladimir/ai-powered-qa-automation#readme",
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
     "@playwright/test": "^1.60.0",
     "cypress": "^15.14.2",
     "typescript": "^6.0.3"

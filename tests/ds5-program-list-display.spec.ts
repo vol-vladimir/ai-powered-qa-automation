@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { test, expect } from "../fixtures/cleanup.fixture";
 import { LoginPage } from "../pages/login.page";
 import { ProgramsPage } from "../pages/programs.page";
@@ -10,6 +11,7 @@ import {
 import {
   createProgram,
   ensureSeedProgramExists,
+  orgHasProgramsViaApi,
 } from "../support/program-factory";
 import { clearSessionForUiLogin } from "../support/session";
 
@@ -46,14 +48,12 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
   test("TC-002: empty state message and create prompt appear when no programs exist", async ({
     page,
   }) => {
-    const programs = new ProgramsPage(page);
-    const emptyStateVisible = await programs.emptyStateMessage
-      .isVisible()
-      .catch(() => false);
     test.skip(
-      (await programs.orgHasPrograms()) || !emptyStateVisible,
+      await orgHasProgramsViaApi(),
       "Organization has existing programs; empty-state test needs isolated org with zero programs",
     );
+
+    const programs = new ProgramsPage(page);
 
     await expect(programs.emptyStateMessage).toBeVisible();
     await expect(programs.createProgramEmptyStateButton).toBeVisible();
@@ -62,15 +62,13 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
   test("TC-003: empty-state create prompt opens the New Program flow", async ({
     page,
   }) => {
-    const programs = new ProgramsPage(page);
-    const emptyStateVisible = await programs.emptyStateMessage
-      .isVisible()
-      .catch(() => false);
     test.skip(
-      (await programs.orgHasPrograms()) || !emptyStateVisible,
+      await orgHasProgramsViaApi(),
       "Requires zero programs in organization",
     );
 
+    const programs = new ProgramsPage(page);
+    await expect(programs.createProgramEmptyStateButton).toBeVisible();
     await programs.createProgramEmptyStateButton.click();
     await expect(programs.newProgramModal.dialog).toBeVisible();
   });
@@ -117,13 +115,17 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
   test("TC-007: API failure does not show empty state when programs exist", async ({
     page,
   }) => {
+    test.fail(
+      true,
+      "DS-72 — GET /programs 500 shows empty state instead of error",
+    );
     const suffix = uniqueSuffix();
     const name = `API error list test ${suffix}`;
     const programs = new ProgramsPage(page);
 
     await createProgram(page, name, `Programs API error probe ${suffix}`);
 
-    await page.route("**/programs**", async (route) => {
+    await page.route("**/api/programs**", async (route) => {
       if (route.request().method() === "GET") {
         await route.fulfill({ status: 500, body: "Internal Server Error" });
         return;
@@ -132,23 +134,14 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     });
 
     await programs.reload();
-    await page.waitForTimeout(2000);
-
-    const showsEmptyState = await programs.emptyStateMessage
-      .isVisible()
-      .catch(() => false);
-    const showsError = await programs
-      .listLoadErrorMessage()
-      .isVisible()
-      .catch(() => false);
-
-    expect(
-      showsEmptyState && !showsError,
-      "DS-5: empty state must not appear when GET /programs fails but programs exist server-side",
-    ).toBeFalsy();
+    await expect(programs.heading).toBeVisible();
+    await expect(programs.emptyStateMessage).toHaveCount(0);
+    await expect(
+      programs.listLoadErrorMessage().or(programs.rowFor(name)),
+    ).toBeVisible();
   });
 
-  test("TC-008: unauthorized user role behavior for programs list", async ({
+  test("TC-008: unauthorized user cannot create programs from the list page", async ({
     page,
   }) => {
     test.skip(
@@ -168,11 +161,11 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     await programs.goto();
     await expect(programs.heading).toBeVisible();
 
-    const visible = await programs.newProgramButton.isVisible().catch(() => false);
-    if (visible) {
-      await expect(programs.newProgramButton).toBeDisabled();
+    const newProgramBtn = programs.newProgramButton;
+    if ((await newProgramBtn.count()) > 0) {
+      await expect(newProgramBtn).toBeDisabled();
     } else {
-      await expect(programs.newProgramButton).toHaveCount(0);
+      await expect(newProgramBtn).toHaveCount(0);
     }
   });
 
@@ -265,13 +258,35 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     }
   });
 
-  test("TC-014: header + New Program is available when programs exist", async ({
+  test("TC-014: header and New Program action are available when programs exist", async ({
     page,
   }) => {
     const programs = new ProgramsPage(page);
     await ensureSeedProgramExists(page);
+    await expect(programs.heading).toBeVisible();
     await expect(programs.newProgramButton).toBeVisible();
     await programs.openNewProgram();
+    await expect(programs.newProgramModal.dialog).toBeVisible();
+  });
+
+  test("TC-015: programs page has no accessibility violations", async ({
+    page,
+  }) => {
+    test.fail(
+      true,
+      "DS-113 — Programs page WCAG 2 AA color-contrast violations (sidebar, description text, semester hint)",
+    );
+    const results = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa"])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test("TC-016: programs list page is keyboard operable", async ({ page }) => {
+    const programs = new ProgramsPage(page);
+    await programs.tabUntilNewProgramFocused();
+    await expect(programs.newProgramButton).toBeFocused();
+    await programs.activateFocusedButton();
     await expect(programs.newProgramModal.dialog).toBeVisible();
   });
 });

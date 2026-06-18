@@ -1,8 +1,21 @@
 import { expect, type Page } from "@playwright/test";
 import { ProgramsPage } from "../pages/programs.page";
-import { createProgramViaApi } from "./didaxis-api";
+import { apiFetch, createProgramViaApi } from "./didaxis-api";
 import { PROGRAM_DESC_SEED, PROGRAM_NAME_SEED } from "./program-constants";
 import { trackProgram } from "./program-tracker";
+
+export async function orgHasProgramsViaApi(): Promise<boolean> {
+  const response = await apiFetch("/api/programs");
+  const body = (await response.json()) as { data?: unknown[] };
+
+  if (!response.ok) {
+    throw new Error(
+      `GET /api/programs failed (${response.status}): ${JSON.stringify(body)}`,
+    );
+  }
+
+  return (body.data ?? []).length > 0;
+}
 
 export async function createProgram(
   page: Page,

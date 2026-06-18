@@ -117,7 +117,9 @@ causes timeouts or hangs (e.g. DS-52).
 | DS-3 TC-016 | `test.fail` | Parallel create attempts with the same name can create duplicates. |
 | DS-4 TC-004 | `test.fail` | Total table row count is unreliable after delete in shared org. |
 | DS-4 TC-008 | `test.skip` | DS-52 — rapid double-click on delete blocks or duplicates the flow. |
+| DS-5 TC-007 | `test.fail` | DS-72 — GET /programs 500 shows empty state instead of error. |
 | DS-5 TC-011 | `test.fail` | DS-53 — empty Description omits description paragraph in list row. |
+| DS-5 TC-015 | `test.fail` | DS-113 — Programs page WCAG 2 AA color-contrast violations (sidebar, description text, semester hint). |
 
 ## Output
 

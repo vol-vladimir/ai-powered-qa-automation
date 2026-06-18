@@ -55,6 +55,23 @@ export class ProgramsPage extends BasePage {
     await this.newProgramButton.click();
   }
 
+  async tabUntilNewProgramFocused(maxTabs = 50) {
+    for (let i = 0; i < maxTabs; i++) {
+      await this.page.keyboard.press("Tab");
+      const focused = await this.newProgramButton.evaluate(
+        (el) => el === document.activeElement,
+      );
+      if (focused) {
+        return;
+      }
+    }
+    throw new Error("Could not focus '+ New Program' button via keyboard Tab");
+  }
+
+  async activateFocusedButton() {
+    await this.page.keyboard.press("Enter");
+  }
+
   programNameParagraph(programName: string) {
     return this.page
       .getByRole("paragraph")
