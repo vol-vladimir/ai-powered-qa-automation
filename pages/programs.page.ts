@@ -11,6 +11,10 @@ import {
 export const EMPTY_PROGRAMS_MESSAGE =
   "No programs yet. Create your first program to get started.";
 
+export const SELECT_PROGRAM_HINT = "Select a program to manage semesters";
+export const SEMESTERS_CONFIG_LABEL = "Semesters & scheduling config";
+export const NO_SEMESTERS_MESSAGE = "No semesters yet";
+
 export type DeleteConfirmCapture = {
   type: string;
   message: string;
@@ -28,6 +32,10 @@ export class ProgramsPage extends BasePage {
   readonly programColumnHeader;
   readonly programsTable;
   readonly emptyStateMessage;
+  readonly selectProgramHint;
+  readonly semestersConfigLabel;
+  readonly newSemesterButton;
+  readonly noSemestersMessage;
   readonly newProgramModal: NewProgramModal;
   readonly editProgramModal: EditProgramModal;
 
@@ -43,6 +51,10 @@ export class ProgramsPage extends BasePage {
     });
     this.programsTable = page.getByRole("table");
     this.emptyStateMessage = page.getByText(EMPTY_PROGRAMS_MESSAGE);
+    this.selectProgramHint = page.getByText(SELECT_PROGRAM_HINT);
+    this.semestersConfigLabel = page.getByText(SEMESTERS_CONFIG_LABEL);
+    this.newSemesterButton = page.getByRole("button", { name: "+ Semester" });
+    this.noSemestersMessage = page.getByText(NO_SEMESTERS_MESSAGE);
     this.newProgramModal = new NewProgramModal(page);
     this.editProgramModal = new EditProgramModal(page);
   }
@@ -155,6 +167,14 @@ export class ProgramsPage extends BasePage {
   async openEditFor(programName: string) {
     await this.editButtonFor(programName).click();
     await this.editProgramModal.expandAiConfigIfCollapsed();
+  }
+
+  semesterPanelHeading(programName: string) {
+    return this.page.getByRole("heading", { name: programName, exact: true });
+  }
+
+  async selectProgram(programName: string) {
+    await this.rowFor(programName).click();
   }
 
   async orgHasPrograms() {
