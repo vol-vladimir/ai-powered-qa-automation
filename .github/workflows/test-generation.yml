@@ -18,7 +18,7 @@ jobs:
     environment: dev1
     env:
       CI: true
-      CURSOR_API_KEY: ${{ secrets.gh_api_key }}
+      CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       DIDAXIS_URL: ${{ secrets.DIDAXIS_URL }}
       DIDAXIS_EMAIL: ${{ secrets.DIDAXIS_EMAIL }}
