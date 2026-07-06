@@ -1,0 +1,59 @@
+name: DS Test Generation
+
+on:
+  schedule:
+    # Weekdays at 9:00 PM EDT (01:00 UTC Tue–Sat)
+    - cron: '0 1 * * 2-6'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate-tests:
+    name: Generate Playwright tests from Jira backlog
+    timeout-minutes: 120
+    runs-on: ubuntu-latest
+    environment: dev1
+    env:
+      CI: true
+      CURSOR_API_KEY: ${{ secrets.gh_api_key }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DIDAXIS_URL: ${{ secrets.DIDAXIS_URL }}
+      DIDAXIS_EMAIL: ${{ secrets.DIDAXIS_EMAIL }}
+      DIDAXIS_API_TOKEN: ${{ secrets.DIDAXIS_API_TOKEN }}
+      DIDAXIS_PASSWORD: ${{ secrets.DIDAXIS_PASSWORD }}
+      DIDAXIS_NONADMIN_EMAIL: ${{ secrets.DIDAXIS_NONADMIN_EMAIL }}
+      DIDAXIS_NONADMIN_PASSWORD: ${{ secrets.DIDAXIS_NONADMIN_PASSWORD }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Cursor CLI
+        run: |
+          curl https://cursor.com/install -fsS | bash
+          echo "$HOME/.cursor/bin" >> $GITHUB_PATH
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run QA orchestrator agent
+        run: |
+          agent -p --force --trust --approve-mcps "$(cat <<'EOF'
+          Follow .cursor/rules/qa-orchestrator.mdc in Backlog mode.
+
+          This run was triggered by schedule or manual dispatch — there is no Jira webhook. Start by querying Jira (project DS, status "In Progress", label tests-generated absent). If the query returns no tickets, stop immediately with a short summary and make no code changes. If tickets exist, pick one and process it only: analyze → write a conforming spec → run it → open a PR linked to the ticket, then add the tests-generated label. Budget: 1 ticket per run. Never merge.
+
+          Use Atlassian for Jira queries and labels. Use GitHub for PRs. Use the terminal for npx playwright test.
+          EOF
+          )"

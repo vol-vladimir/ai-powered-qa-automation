@@ -39,7 +39,7 @@ alwaysApply: false
 ## Routing
 
 - **Ticket given** → analyze → produce test plan → save to `features/{ticket_number}`
-- **Plan ready** → delegate to `test-writer` (ref: playwright-convensions.mdc)
+- **Plan ready** → delegate to `test-writer` (ref: playwright-conventions.mdc)
 - **Spec returned** → run: `npx playwright test`
 - **Run is red** → delegate to `triage`
 - **Real app bug** → delegate to `bug-reporter`
