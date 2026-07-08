@@ -59,9 +59,17 @@ Start only when wired by one of:
 - a local batch script
 
 On trigger, query Jira for DS tickets where:
-- project: **DS**
+- project: **DS** (any key matching `DS-*`)
 - status: **In Progress**
-- label: **`tests-generated`** is absent
+- label **`tests-generated`** is absent — including tickets with **no labels at all**
+
+Use **cloudId** `legionqaschool.atlassian.net` for all Atlassian JQL queries (required for API-token auth in CI).
+
+**Backlog JQL** (use exactly — do not use `labels != tests-generated`; that excludes unlabeled issues):
+
+```jql
+project = DS AND status = "In Progress" AND (labels is EMPTY OR labels not in (tests-generated))
+```
 
 Pick **one** ticket (budget: at most **1 ticket per run**). Order is defined by the trigger/wrapper, not by the coordinator.
 

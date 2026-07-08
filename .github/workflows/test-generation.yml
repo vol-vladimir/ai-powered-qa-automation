@@ -13,30 +13,28 @@ permissions:
 jobs:
   generate-tests:
     name: Generate Playwright tests from Jira backlog
-    timeout-minutes: 120
     runs-on: ubuntu-latest
     environment: dev1
+    timeout-minutes: 120
     env:
       CI: true
-      CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DIDAXIS_URL: ${{ secrets.DIDAXIS_URL }}
+      DIDAXIS_EMAIL: ${{ secrets.DIDAXIS_EMAIL }}
+      DIDAXIS_PASSWORD: ${{ secrets.DIDAXIS_PASSWORD }}
+      DIDAXIS_API_TOKEN: ${{ secrets.DIDAXIS_API_TOKEN }}
+      DIDAXIS_NONADMIN_EMAIL: ${{ secrets.DIDAXIS_NONADMIN_EMAIL }}
+      DIDAXIS_NONADMIN_PASSWORD: ${{ secrets.DIDAXIS_NONADMIN_PASSWORD }}
+      ATLASSIAN_BASE_URL: ${{ secrets.ATLASSIAN_BASE_URL }}
       ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
       ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
       ATLASSIAN_CLOUD_ID: legionqaschool.atlassian.net
-      DIDAXIS_URL: ${{ secrets.DIDAXIS_URL }}
-      DIDAXIS_EMAIL: ${{ secrets.DIDAXIS_EMAIL }}
-      DIDAXIS_API_TOKEN: ${{ secrets.DIDAXIS_API_TOKEN }}
-      DIDAXIS_PASSWORD: ${{ secrets.DIDAXIS_PASSWORD }}
-      DIDAXIS_NONADMIN_EMAIL: ${{ secrets.DIDAXIS_NONADMIN_EMAIL }}
-      DIDAXIS_NONADMIN_PASSWORD: ${{ secrets.DIDAXIS_NONADMIN_PASSWORD }}
+      JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Install Cursor CLI
-        run: |
-          curl https://cursor.com/install -fsS | bash
-          echo "$HOME/.cursor/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -50,24 +48,46 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Configure Atlassian MCP for CI
+      - name: Install Cursor CLI
         run: |
-          if [ -z "$ATLASSIAN_EMAIL" ] || [ -z "$ATLASSIAN_API_TOKEN" ]; then
-            echo "::error::Add ATLASSIAN_EMAIL and ATLASSIAN_API_TOKEN secrets to the dev1 environment."
-            exit 1
-          fi
-          AUTH_B64=$(printf '%s' "${ATLASSIAN_EMAIL}:${ATLASSIAN_API_TOKEN}" | base64 -w 0)
-          mkdir -p .cursor "$HOME/.cursor"
-          AUTH_B64="$AUTH_B64" python3 -c 'import json, os; print(json.dumps({"mcpServers": {"atlassian": {"url": "https://mcp.atlassian.com/v1/mcp", "headers": {"Authorization": "Basic " + os.environ["AUTH_B64"]}}}}, indent=2))' > .cursor/mcp.json
-          cp .cursor/mcp.json "$HOME/.cursor/mcp.json"
+          curl https://cursor.com/install -fsS | bash
+          echo "$HOME/.cursor/bin" >> $GITHUB_PATH
 
-      - name: Run QA orchestrator agent
+      - name: Configure git
         run: |
-          agent -p --force --trust --approve-mcps "$(cat <<'EOF'
-          Follow .cursor/rules/qa-orchestrator.mdc in Backlog mode.
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          This run was triggered by schedule or manual dispatch — there is no Jira webhook. Start by querying Jira (project DS, status "In Progress", label tests-generated absent). Use cloudId legionqaschool.atlassian.net for all Atlassian JQL queries. If the query returns no tickets, stop immediately with a short summary and make no code changes. If tickets exist, pick one and process it only: analyze → write a conforming spec → run it → open a PR linked to the ticket, then add the tests-generated label. Budget: 1 ticket per run. Never merge.
+      - name: Generate tests from In Progress backlog
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
+          CURSOR_GH_MCP: ${{ secrets.CURSOR_GH_MCP }}
+        run: |
+          agent -p --force --trust --output-format text "$(cat <<'EOF'
+          You are the QA orchestrator for this Playwright test repository. Work the Jira "In Progress" backlog for the DS project.
 
-          Use Atlassian for Jira queries and labels. Use GitHub for PRs. Use the terminal for npx playwright test.
+          Budget: process at most 5 tickets this run. Never merge any pull request.
+
+          For each ticket (up to the budget):
+          1. Analyze the ticket acceptance criteria (use Jira REST API with ATLASSIAN_EMAIL + ATLASSIAN_API_TOKEN against ATLASSIAN_BASE_URL; project key JIRA_PROJECT_KEY).
+          2. Write a conforming Playwright spec under tests/ following .cursor/rules/playwright-conventions.mdc, the pom-conventions skill, and the api-cleanup skill. Use Page Object Models from pages/; do not modify application source.
+          3. Run the spec: npx playwright test <spec-path>
+          4. If the run is green, open a pull request linked to the Jira ticket (reference the ticket key in the branch name, commit message, and PR title/body). Add the label tests-generated to the PR via gh.
+          5. If the run fails due to an app bug, stop on that ticket and summarize the failure; do not open a PR for a red spec.
+
+          Guardrails:
+          - Write only under tests/ (and pages/ if new POM methods are required).
+          - One ticket per branch/PR when possible.
+          - Do not merge PRs; a human approves merge.
+          - Stop when the budget of 5 tickets is reached or the In Progress backlog is exhausted.
           EOF
           )"
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
