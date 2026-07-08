@@ -20,6 +20,9 @@ jobs:
       CI: true
       CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
+      ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
+      ATLASSIAN_CLOUD_ID: legionqaschool.atlassian.net
       DIDAXIS_URL: ${{ secrets.DIDAXIS_URL }}
       DIDAXIS_EMAIL: ${{ secrets.DIDAXIS_EMAIL }}
       DIDAXIS_API_TOKEN: ${{ secrets.DIDAXIS_API_TOKEN }}
@@ -47,12 +50,23 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Configure Atlassian MCP for CI
+        run: |
+          if [ -z "$ATLASSIAN_EMAIL" ] || [ -z "$ATLASSIAN_API_TOKEN" ]; then
+            echo "::error::Add ATLASSIAN_EMAIL and ATLASSIAN_API_TOKEN secrets to the dev1 environment."
+            exit 1
+          fi
+          AUTH_B64=$(printf '%s' "${ATLASSIAN_EMAIL}:${ATLASSIAN_API_TOKEN}" | base64 -w 0)
+          mkdir -p .cursor "$HOME/.cursor"
+          AUTH_B64="$AUTH_B64" python3 -c 'import json, os; print(json.dumps({"mcpServers": {"atlassian": {"url": "https://mcp.atlassian.com/v1/mcp", "headers": {"Authorization": "Basic " + os.environ["AUTH_B64"]}}}}, indent=2))' > .cursor/mcp.json
+          cp .cursor/mcp.json "$HOME/.cursor/mcp.json"
+
       - name: Run QA orchestrator agent
         run: |
           agent -p --force --trust --approve-mcps "$(cat <<'EOF'
           Follow .cursor/rules/qa-orchestrator.mdc in Backlog mode.
 
-          This run was triggered by schedule or manual dispatch — there is no Jira webhook. Start by querying Jira (project DS, status "In Progress", label tests-generated absent). If the query returns no tickets, stop immediately with a short summary and make no code changes. If tickets exist, pick one and process it only: analyze → write a conforming spec → run it → open a PR linked to the ticket, then add the tests-generated label. Budget: 1 ticket per run. Never merge.
+          This run was triggered by schedule or manual dispatch — there is no Jira webhook. Start by querying Jira (project DS, status "In Progress", label tests-generated absent). Use cloudId legionqaschool.atlassian.net for all Atlassian JQL queries. If the query returns no tickets, stop immediately with a short summary and make no code changes. If tickets exist, pick one and process it only: analyze → write a conforming spec → run it → open a PR linked to the ticket, then add the tests-generated label. Budget: 1 ticket per run. Never merge.
 
           Use Atlassian for Jira queries and labels. Use GitHub for PRs. Use the terminal for npx playwright test.
           EOF

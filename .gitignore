@@ -1,4 +1,5 @@
 .env
+.cursor/mcp.json
 .auth/
 .playwright-mcp/
 programs-page.yml
