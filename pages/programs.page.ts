@@ -170,7 +170,7 @@ export class ProgramsPage extends BasePage {
   }
 
   semesterPanelHeading(programName: string) {
-    return this.page.getByRole("heading", { name: programName, exact: true });
+    return this.page.locator("div").filter({ hasText: `${programName} Semesters` });
   }
 
   async selectProgram(programName: string) {
