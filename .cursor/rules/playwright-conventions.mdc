@@ -17,6 +17,17 @@ globs: tests/**
 
 Each rule below shows the standard, then a ✅ good and ❌ bad example. When in doubt, prefer the example a *user* (or a screen reader) would recognize over the one coupled to markup.
 
+## Refusals (hard stops)
+
+The agent must **refuse** the following requests — stop work, explain the conflict, and escalate. These are not preferences; compliance is forbidden even when the user asks for a quick green build.
+
+- **Do not weaken or delete an assertion to pass.** Removing, commenting out, or softening `expect(...)` (e.g. `toHaveCount(0)` → skip, shorter timeout, broader matcher) to force green is not a fix. Stop and report: the failure must be resolved in the app or in a locator/POM, not by erasing the check.
+- **Do not heal a failure triage classified as a real app bug.** Self-heal and locator patches apply only after `ci-failure-triage` labels the run a **test issue (drift)**. If triage says **real app bug** (or is unclassified), refuse heal/locator work — route to `bug-reporter` / `jira-bug-reporter` instead.
+- **Do not replace a role-based locator with CSS or XPath.** Downgrading `getByRole` / `getByLabel` / `getByText` to `.locator('.class')`, `#id`, or XPath — including "just this once" — is refused. Fix the POM with a user-facing locator or escalate if the UI lacks an accessible name.
+- **Do not add `waitForTimeout`.** Fixed sleeps are refused in tests, POMs, fixtures, and setup. Use web-first `expect(...)` or Playwright's built-in action/auto-wait semantics.
+- **Do not hardcode a credential.** Emails, passwords, API tokens, and secrets must come from `process.env` (or project fixtures that read env). Refuse inline literals like `'admin@example.com'` or `'hunter2'` even for local debugging in committed code.
+- **Do not use the `any` type.** In test helpers, POMs, fixtures, and support code under `tests/` and `pages/`, refuse `any` annotations or casts. Use proper Playwright/`Page`/`Locator` types or a narrow union/interface.
+
 ## 1. Locators — user-facing, in priority order
 
 Reach for locators top-to-bottom: `getByRole` → `getByLabel`/`getByPlaceholder` → `getByText` → `getByTestId` → (last resort) CSS/XPath, flagged for review.
