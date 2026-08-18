@@ -3,8 +3,8 @@
   "hooks": {
     "afterFileEdit": [
       {
-        "command": ".cursor/hooks/guard-test-assertions.js",
-        "matcher": "tests/",
+        "command": "node .cursor/hooks/guard-constitution-wont.js",
+        "matcher": "Write",
         "failClosed": true
       }
     ]

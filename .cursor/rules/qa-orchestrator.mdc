@@ -38,6 +38,7 @@ alwaysApply: false
 - `jira-ticket-analyzer` — the coordinator owns "analyze"
 - `explore-and-generate` — ticket-less coverage discovery; coordinator owns exploration and Gherkin plan output (see Routing)
 - `self-heal` — drift repair after triage; coordinator delegates, does not patch POMs itself (see Heal on red)
+- `eval-report` — suite reliability scorecard; coordinator owns refresh (see Reliability eval)
 
 ## Routing
 
@@ -49,6 +50,23 @@ alwaysApply: false
 - **Drift (test issue)** → delegate to `self-heal` (see Heal on red)
 - **Test issue that is not drift** (spec logic, data, flake) → delegate to `test-writer` (propose fix, human OKs)
 - **Coverage gap / no ticket** → read `explore-and-generate` skill → map flows, propose one Gherkin plan → save to `features/` → human review → delegate to `test-writer` when approved
+- **Eval / reliability report** → read `eval-report` skill → overwrite `eval-report.md` at repo root (see Reliability eval)
+
+## Reliability eval (mandatory)
+
+After **Backlog mode** finishes its ticket work (PR opened + `tests-generated`
+label applied, or backlog empty), the coordinator **must** run `eval-report`
+before stopping — same run, no delegation.
+
+1. Read and follow `.cursor/skills/eval-report/SKILL.md`.
+2. Write **`eval-report.md`** at the repo root (fixed path; not `.ci-artifacts/`).
+3. When the trigger has git write (scheduled agent, automation): commit on
+   `harness/eval-report` and open a PR; do not merge.
+4. If GitHub MCP is unavailable, still produce the report and document data
+   gaps — do not skip the step or invent metrics.
+
+Standalone chat requests ("eval report", "reliability metrics") use the same
+skill and output path.
 
 ## Heal on red
 
@@ -133,4 +151,4 @@ Same pipeline as single-ticket mode:
 
 **Single ticket:** the suite is green for the ticket, a drift repair PR is open with green-run proof, or a bug is filed and linked.
 
-**Backlog mode:** one PR per processed ticket (linked to Jira), `tests-generated` label applied, then stop. Green suite or filed bug is ideal; human merges/closes.
+**Backlog mode:** one PR per processed ticket (linked to Jira), `tests-generated` label applied, **`eval-report.md` refreshed** (mandatory), then stop. Green suite or filed bug is ideal; human merges/closes.

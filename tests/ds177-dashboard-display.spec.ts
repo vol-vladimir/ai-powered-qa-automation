@@ -12,7 +12,7 @@ test.describe("Didaxis Studio — dashboard display and navigation (DS-177)", ()
     await expect(dashboard.heading).toBeVisible();
   });
 
-  test("TC-001: Dashboard shows Programs, Calendar, Validation, and AI Assist blocks", async ({
+  test("TC-001: Dashboard shows Programs, Calendar, Validation, and AI Assist blocks", { tag: "@smoke" }, async ({
     page,
   }) => {
     const dashboard = new DashboardPage(page);
@@ -24,7 +24,7 @@ test.describe("Didaxis Studio — dashboard display and navigation (DS-177)", ()
     await expect.soft(dashboard.cards.aiAssistCard).toBeVisible();
   });
 
-  test("TC-002: Programs card navigates to Programs page", async ({ page }) => {
+  test("TC-002: Programs card navigates to Programs page", { tag: "@e2e" }, async ({ page }) => {
     const dashboard = new DashboardPage(page);
     const programs = new ProgramsPage(page);
 
@@ -34,7 +34,7 @@ test.describe("Didaxis Studio — dashboard display and navigation (DS-177)", ()
     await expect(programs.heading).toBeVisible();
   });
 
-  test("TC-003: Calendar card navigates to Calendar page", async ({ page }) => {
+  test("TC-003: Calendar card navigates to Calendar page", { tag: "@e2e" }, async ({ page }) => {
     const dashboard = new DashboardPage(page);
     const calendar = new CalendarPage(page);
 
@@ -44,7 +44,7 @@ test.describe("Didaxis Studio — dashboard display and navigation (DS-177)", ()
     await expect(calendar.heading).toBeVisible();
   });
 
-  test("TC-004: Validation card navigates to Validation page", async ({
+  test("TC-004: Validation card navigates to Validation page", { tag: "@e2e" }, async ({
     page,
   }) => {
     const dashboard = new DashboardPage(page);
@@ -56,7 +56,7 @@ test.describe("Didaxis Studio — dashboard display and navigation (DS-177)", ()
     await expect(validation.heading).toBeVisible();
   });
 
-  test("TC-005: AI Assist card navigates to AI Assist page", async ({
+  test("TC-005: AI Assist card navigates to AI Assist page", { tag: "@e2e" }, async ({
     page,
   }) => {
     const dashboard = new DashboardPage(page);

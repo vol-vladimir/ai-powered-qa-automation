@@ -17,7 +17,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     await expect(programs.heading).toBeVisible();
   });
 
-  test("TC-001: program is created when Program Name is Informatique & IA - Niveau 2", async ({
+  test("TC-001: program is created when Program Name is Informatique & IA - Niveau 2", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -35,7 +35,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     await expect(programs.rowFor(name)).toBeVisible();
   });
 
-  test("TC-002: program is created when leading/trailing spaces are trimmed", async ({
+  test("TC-002: program is created when leading/trailing spaces are trimmed", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -53,7 +53,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     await expect(programs.rowFor(displayName)).toBeVisible();
   });
 
-  test("TC-003: program is created when Program Name contains accented Latin characters", async ({
+  test("TC-003: program is created when Program Name contains accented Latin characters", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -71,7 +71,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     await expect(programs.rowFor(name)).toBeVisible();
   });
 
-  test("TC-004: program is created when Program Name uses punctuation and symbols", async ({
+  test("TC-004: program is created when Program Name uses punctuation and symbols", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -89,7 +89,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     await expect(programs.rowFor(name)).toBeVisible();
   });
 
-  test("TC-005: form is not submitted when Program Name is only whitespace", async ({
+  test("TC-005: form is not submitted when Program Name is only whitespace", { tag: "@regression" }, async ({
     page,
   }) => {
     const programs = new ProgramsPage(page);
@@ -106,7 +106,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     await expect(programs.rowFor("   ")).toHaveCount(0);
   });
 
-  test("TC-006: form is not submitted when Program Name is empty", async ({
+  test("TC-006: form is not submitted when Program Name is empty", { tag: "@regression" }, async ({
     page,
   }) => {
     const programs = new ProgramsPage(page);
@@ -118,7 +118,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     await expect(modal.dialog).toBeVisible();
   });
 
-  test("TC-007: duplicate program creation is rejected for exact name Web Development 2026", async ({
+  test("TC-007: duplicate program creation is rejected for exact name Web Development 2026", { tag: "@regression" }, async ({
     page,
   }) => {
     test.fail(
@@ -142,7 +142,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     expect(await modal.hasDuplicateNameFeedback()).toBeTruthy();
   });
 
-  test("TC-008: duplicate creation is rejected when only leading/trailing spaces differ", async ({
+  test("TC-008: duplicate creation is rejected when only leading/trailing spaces differ", { tag: "@regression" }, async ({
     page,
   }) => {
     test.fail(
@@ -170,7 +170,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     expect(await modal.hasDuplicateNameFeedback()).toBeTruthy();
   });
 
-  test("TC-009: no program is created when duplicate name is submitted", async ({
+  test("TC-009: no program is created when duplicate name is submitted", { tag: "@regression" }, async ({
     page,
   }) => {
     test.fail(
@@ -194,7 +194,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     expect(await modal.hasDuplicateNameFeedback()).toBeTruthy();
   });
 
-  test("TC-010: create does not succeed when Program Name contains only tabs", async ({
+  test("TC-010: create does not succeed when Program Name contains only tabs", { tag: "@regression" }, async ({
     page,
   }) => {
     const programs = new ProgramsPage(page);
@@ -210,7 +210,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     }
   });
 
-  test("TC-011: program name at exact maximum length 100 is accepted when unique", async ({
+  test("TC-011: program name at exact maximum length 100 is accepted when unique", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -225,7 +225,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     await expect(programs.rowFor(name)).toBeVisible();
   });
 
-  test("TC-012: program name exceeding 100 characters is rejected", async ({
+  test("TC-012: program name exceeding 100 characters is rejected", { tag: "@regression" }, async ({
     page,
   }) => {
     test.fail(
@@ -250,7 +250,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     await expect(modal.dialog).toBeVisible();
   });
 
-  test("TC-013: duplicate validation for case-different name is handled consistently", async ({
+  test("TC-013: duplicate validation for case-different name is handled consistently", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -276,7 +276,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     expect(rejected || allowedCaseSensitive).toBeTruthy();
   });
 
-  test("TC-014: duplicate validation handles internal multiple spaces consistently", async ({
+  test("TC-014: duplicate validation handles internal multiple spaces consistently", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -298,7 +298,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     expect(duplicateRows).toBeLessThanOrEqual(1);
   });
 
-  test("TC-015: program name with newline is rejected or sanitized safely", async ({
+  test("TC-015: program name with newline is rejected or sanitized safely", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -329,7 +329,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     expect(displayedName).toBe(sanitizedName);
   });
 
-  test("TC-016: parallel create attempts with same name yield only one program", async ({
+  test("TC-016: parallel create attempts with same name yield only one program", { tag: "@regression" }, async ({
     browser,
   }) => {
     test.fixme(
@@ -378,7 +378,7 @@ test.describe("Didaxis Studio — create program name validation (DS-3)", () => 
     }
   });
 
-  test("TC-017: minimum-length valid name AI is accepted when unique", async ({
+  test("TC-017: minimum-length valid name AI is accepted when unique", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();

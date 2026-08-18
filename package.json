@@ -6,6 +6,12 @@
   "scripts": {
     "test": "playwright test",
     "test:ui": "playwright test --ui",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:sanity": "playwright test --grep @sanity",
+    "test:regression": "playwright test --grep @regression",
+    "test:api": "playwright test --grep @api",
+    "test:e2e": "playwright test --grep @e2e",
+    "test:destructive": "playwright test --grep @destructive --workers=1",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run"
   },
@@ -23,6 +29,7 @@
   "homepage": "https://github.com/vol-vladimir/ai-powered-qa-automation#readme",
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",
+    "@faker-js/faker": "^10.6.0",
     "@playwright/test": "^1.60.0",
     "cypress": "^15.14.2",
     "typescript": "^6.0.3"

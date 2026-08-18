@@ -15,7 +15,7 @@ test.describe("Didaxis Studio — create new academic program (DS-1)", () => {
     await expect(programs.heading).toBeVisible();
   });
 
-  test("TC-001: navigate to program creation form", async ({ page }) => {
+  test("TC-001: navigate to program creation form", { tag: "@smoke" }, async ({ page }) => {
     const programs = new ProgramsPage(page);
     await programs.openNewProgram();
 
@@ -26,7 +26,7 @@ test.describe("Didaxis Studio — create new academic program (DS-1)", () => {
     await expect(modal.createButton).toBeVisible();
   });
 
-  test("TC-002: successfully create a program", async ({ page }) => {
+  test("TC-002: successfully create a program", { tag: "@smoke" }, async ({ page }) => {
     const suffix = uniqueSuffix();
     const name = `${AC_PROGRAM_NAME} ${suffix}`;
     const programs = new ProgramsPage(page);
@@ -39,7 +39,7 @@ test.describe("Didaxis Studio — create new academic program (DS-1)", () => {
     await expect(programs.rowFor(name)).toBeVisible();
   });
 
-  test("TC-003: create program with name only and empty description", async ({
+  test("TC-003: create program with name only and empty description", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -54,7 +54,7 @@ test.describe("Didaxis Studio — create new academic program (DS-1)", () => {
     await expect(programs.rowFor(name)).toBeVisible();
   });
 
-  test("TC-004: program list updates immediately after create without manual refresh", async ({
+  test("TC-004: program list updates immediately after create without manual refresh", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -71,7 +71,7 @@ test.describe("Didaxis Studio — create new academic program (DS-1)", () => {
     await expect(page).toHaveURL(/\/programs/);
   });
 
-  test("TC-005: created program displays correct description in list", async ({
+  test("TC-005: created program displays correct description in list", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -88,7 +88,7 @@ test.describe("Didaxis Studio — create new academic program (DS-1)", () => {
     await expect(programs.descriptionInRow(name)).toHaveText(AC_DESCRIPTION);
   });
 
-  test("TC-006: validation prevents empty program name", async ({ page }) => {
+  test("TC-006: validation prevents empty program name", { tag: "@regression" }, async ({ page }) => {
     const programs = new ProgramsPage(page);
     const modal = programs.newProgramModal;
 
@@ -100,7 +100,7 @@ test.describe("Didaxis Studio — create new academic program (DS-1)", () => {
     await expect(modal.dialog).toBeVisible();
   });
 
-  test("TC-007: cancel closes modal without adding program to list", async ({
+  test("TC-007: cancel closes modal without adding program to list", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -115,7 +115,7 @@ test.describe("Didaxis Studio — create new academic program (DS-1)", () => {
     await expect(programs.rowFor(name)).toHaveCount(0);
   });
 
-  test("TC-008: close modal via X without creating program", async ({ page }) => {
+  test("TC-008: close modal via X without creating program", { tag: "@regression" }, async ({ page }) => {
     const suffix = uniqueSuffix();
     const name = `Abandoned Program ${suffix}`;
     const programs = new ProgramsPage(page);
@@ -128,7 +128,7 @@ test.describe("Didaxis Studio — create new academic program (DS-1)", () => {
     await expect(programs.rowFor(name)).toHaveCount(0);
   });
 
-  test("TC-009: whitespace-only Program Name does not create a program", async ({
+  test("TC-009: whitespace-only Program Name does not create a program", { tag: "@regression" }, async ({
     page,
   }) => {
     const programs = new ProgramsPage(page);
@@ -145,7 +145,7 @@ test.describe("Didaxis Studio — create new academic program (DS-1)", () => {
     await expect(programs.rowFor("   ")).toHaveCount(0);
   });
 
-  test("TC-010: description at maximum length 500 is accepted with valid name", async ({
+  test("TC-010: description at maximum length 500 is accepted with valid name", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -161,7 +161,7 @@ test.describe("Didaxis Studio — create new academic program (DS-1)", () => {
     await expect(programs.descriptionInRow(name)).toHaveText(description);
   });
 
-  test("TC-011: AI Generation Config section is visible and collapsible", async ({
+  test("TC-011: AI Generation Config section is visible and collapsible", { tag: "@sanity" }, async ({
     page,
   }) => {
     const programs = new ProgramsPage(page);
@@ -179,7 +179,7 @@ test.describe("Didaxis Studio — create new academic program (DS-1)", () => {
     await expect(modal.targetAudienceInput).toBeVisible();
   });
 
-  test("TC-012: double-clicking Create does not create duplicate programs", async ({
+  test("TC-012: double-clicking Create does not create duplicate programs", { tag: "@regression" }, async ({
     page,
   }) => {
     test.fail(
