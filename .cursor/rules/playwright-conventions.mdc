@@ -8,7 +8,8 @@ globs: tests/**
 ## Waiting web-first assertions only; never waitForTimeout
 ## Page Objects one per page; locators in constructor; no assertions in POMs
 ## Auth storageState via the setup project; API-login for speed
-## Data unique data (Date.now()); every test cleans up after itself
+## Data unique, self-cleaning; Faker factories in test-data/factories; invalid sets static; env for secrets
+## Tags exactly one of @smoke @sanity @regression @api @e2e @destructive on each test(); never on describe()
 ## API request fixture for setup/teardown and contract checks
 ## Mocking route/fulfill for 500/503/timeout/empty/malformed
 ## Accessibility axe scan (wcag2a/aa) on key pages + a keyboard-nav check
@@ -16,6 +17,18 @@ globs: tests/**
 ## Anti-flake CI-only retries; isolation; page.clock; pinned locale/timezone
 
 Each rule below shows the standard, then a ✅ good and ❌ bad example. When in doubt, prefer the example a *user* (or a screen reader) would recognize over the one coupled to markup.
+
+## Refusals (hard stops)
+
+The agent must **refuse** the following requests — stop work, explain the conflict, and escalate. These are not preferences; compliance is forbidden even when the user asks for a quick green build.
+
+- **Do not weaken or delete an assertion to pass.** Removing, commenting out, or softening `expect(...)` (e.g. `toHaveCount(0)` → skip, shorter timeout, broader matcher) to force green is not a fix. Stop and report: the failure must be resolved in the app or in a locator/POM, not by erasing the check.
+- **Do not heal a failure triage classified as a real app bug.** Self-heal and locator patches apply only after `ci-failure-triage` labels the run a **test issue (drift)**. If triage says **real app bug** (or is unclassified), refuse heal/locator work — route to `bug-reporter` / `jira-bug-reporter` instead.
+- **Do not replace a role-based locator with CSS or XPath.** Downgrading `getByRole` / `getByLabel` / `getByText` to `.locator('.class')`, `#id`, or XPath — including "just this once" — is refused. Fix the POM with a user-facing locator or escalate if the UI lacks an accessible name.
+- **Do not add `waitForTimeout`.** Fixed sleeps are refused in tests, POMs, fixtures, and setup. Use web-first `expect(...)` or Playwright's built-in action/auto-wait semantics.
+- **Do not hardcode a credential.** Emails, passwords, API tokens, and secrets must come from `process.env` (or project fixtures that read env). Refuse inline literals like `'admin@example.com'` or `'hunter2'` even for local debugging in committed code.
+- **Do not use the `any` type.** In test helpers, POMs, fixtures, and support code under `tests/` and `pages/`, refuse `any` annotations or casts. Use proper Playwright/`Page`/`Locator` types or a narrow union/interface.
+- **Do not tag `test.describe()`.** Exactly one slice tag on each `test()`. Do not mark own-data CRUD as `@destructive`.
 
 ## 1. Locators — user-facing, in priority order
 
@@ -131,22 +144,42 @@ test.beforeEach(async ({ page }) => {       // logs in before EVERY test — slo
 
 ## 5. Test data — unique, self-cleaning, isolated
 
-Every test creates its own data with a unique name and cleans up after itself. Tests must not depend on each other or on leftover state.
+Every test creates its own data with a unique name and cleans up after itself. Tests must not depend on each other or on leftover state. A test that only creates/deletes **its own** records is **not** `@destructive` — keep `@smoke` / `@sanity` / `@regression` / `@api` / `@e2e` and tear down via the cleanup fixture.
 
-✅ **Good**
+| Kind | Where | Use for |
+| --- | --- | --- |
+| Faker factories | `test-data/factories/` | Happy-path names, emails, payloads |
+| Curated invalid sets | static `.ts` under `test-data/invalid/` | Empty, whitespace, too-long, illegal chars — reviewed literals, not Faker |
+| Secrets and URLs | `process.env` | `DIDAXIS_URL`, credentials, tokens — never literals |
+| Repeated paths / messages | `test-data/enums/` | Routes, headings, known UI copy used in 2+ places |
+
+Creating or deleting a program (tracked + API-deleted) is own-data cleanup, not a state mutate. **Any** test that mutates shared/global state (locale, roles, flags, settings) **must** revert it in `afterEach` or `afterAll` — even if the test fails mid-way — and is tagged `@destructive` (see Tags).
+
+✅ **Good** — factory for happy path; fixture tears down own rows
 
 ```tsx
-const unique = (p: string) => `${p}-${Date.now()}`;
+import { buildProgram } from '../test-data/factories/program.factory';
 
-test('creates a program', async ({ page, request }) => {
-  const name = unique('Web Dev');
-  // ... create via UI ...
-  await expect(list.row(name)).toBeVisible();
+test('creates a program', { tag: '@smoke' }, async ({ page }) => {
+  const program = buildProgram();
+  await form.createProgram(program.name, program.description);
+  await expect(list.row(program.name)).toBeVisible();
 });
+```
 
-test.afterEach(async ({ request }) => {
-  await cleanupProgramsByPrefix(request, 'Web Dev-');   // API teardown
-});
+```ts
+// test-data/factories/program.factory.ts
+import { faker } from '@faker-js/faker';
+
+export type ProgramInput = { name: string; description: string };
+
+export function buildProgram(overrides: Partial<ProgramInput> = {}): ProgramInput {
+  return {
+    name: `${faker.commerce.department()} ${Date.now()}`,
+    description: faker.lorem.sentence(),
+    ...overrides,
+  };
+}
 ```
 
 ❌ **Bad**
@@ -157,7 +190,7 @@ test('creates a program', async ({ page }) => {
 });                                              // no cleanup → pollutes the next run / CI
 ```
 
-**Why:** shared or static data makes tests order-dependent and flaky in parallel. `Date.now()` keeps names unique; API cleanup is faster and more reliable than clicking through the UI.
+**Why:** shared or static data makes tests order-dependent and flaky in parallel. Faker + a unique suffix keeps happy-path data isolated; API cleanup is faster and more reliable than clicking through the UI. Invalid cases stay curated so we assert on known bad inputs, not random noise.
 
 ## 6. API testing — use the `request` fixture for setup, teardown, and contracts
 
@@ -320,4 +353,50 @@ export default defineConfig({
 // tests that read `new Date()` and assert on "today" → break at midnight / across timezones
 ```
 
-**Why:** retries buy a green build, not a fixed one — a test that only passes on retry is a bug with a snooze button; track those. Pinned locale/timezone and `page.clock` remove whole classes of time-dependent flake. Cranking `workers: 1` to stop collisions hides the real problem: tests that aren't isolated.
+**Why:** retries buy a green build, not a fixed one — a test that only passes on retry is a bug with a snooze button; track those. Pinned locale/timezone and `page.clock` remove whole classes of time-dependent flake. Cranking `workers: 1` to stop collisions hides the real problem: tests that aren't isolated. The exception is `@destructive` (shared/global state) — that slice **must** run with `--workers=1` via `npm run test:destructive`.
+
+## 11. Tags — exactly one slice tag per test
+
+Tag **each** `test()`, never `test.describe()`. Exactly one of:
+
+| Tag | Meaning |
+| --- | --- |
+| `@smoke` | Smallest slice that proves the app boots and the core happy path works |
+| `@sanity` | Broader than smoke: key flows still work after a change |
+| `@regression` | Edge cases, validation, a11y, keyboard, known-bug `test.fail` |
+| `@api` | The subject is API contract or mocked API failure handling |
+| `@e2e` | Cross-page user journey (e.g. dashboard card → destination) |
+| `@destructive` | **Only** tests that mutate **shared/global** state: locale, roles, flags, org settings |
+
+`@destructive` is **not** for CRUD that cleans up its own programs. Those keep `@smoke` / `@sanity` / `@regression` / `@api` / `@e2e`.
+
+`@destructive` tests run **serially** (`npm run test:destructive` → `--workers=1`). They **must** restore previous state in `afterEach` or `afterAll` so a failure cannot leak locale/role/flag/settings into the next test.
+
+Auth setup (`tests/auth.setup.ts`) is not a product test; it carries every slice tag so `--grep @smoke` (etc.) still writes `storageState`.
+
+✅ **Good**
+
+```tsx
+test('successfully create a program', { tag: '@smoke' }, async ({ page }) => { /* own data */ });
+
+test('switches org locale', { tag: '@destructive' }, async ({ page }) => {
+  // mutate shared locale — revert below
+});
+
+test.afterEach(async () => {
+  await restoreOrgLocale(previousLocale);  // required on any state-mutating test
+});
+```
+
+```bash
+npm run test:smoke
+npm run test:destructive   # --workers=1
+```
+
+❌ **Bad**
+
+```tsx
+test.describe('programs', { tag: '@smoke' }, () => { /* tags belong on test(), not describe() */ });
+test('deletes the program it created', { tag: '@destructive' }, async () => { /* own data — use @smoke/@sanity/@regression */ });
+test('flips a feature flag', { tag: '@regression' }, async () => { /* shared state — must be @destructive + revert */ });
+```

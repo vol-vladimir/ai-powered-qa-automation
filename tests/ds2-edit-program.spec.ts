@@ -20,7 +20,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await expect(programs.heading).toBeVisible();
   });
 
-  test("TC-001: edit form opens with existing program data pre-populated", async ({
+  test("TC-001: edit form opens with existing program data pre-populated", { tag: "@smoke" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -46,7 +46,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
       });
   });
 
-  test("TC-002: program name update is saved and shown immediately in list", async ({
+  test("TC-002: program name update is saved and shown immediately in list", { tag: "@smoke" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -66,7 +66,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await expect(programs.rowFor(programName)).toHaveCount(0);
   });
 
-  test("TC-003: updating only Description preserves all unchanged fields", async ({
+  test("TC-003: updating only Description preserves all unchanged fields", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -95,7 +95,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
       .toEqual({ ...originalSnapshot, description: updatedDescription });
   });
 
-  test("TC-004: multiple editable fields can be updated in one save operation", async ({
+  test("TC-004: multiple editable fields can be updated in one save operation", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -125,7 +125,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
       });
   });
 
-  test("TC-005: save is blocked when Name is empty", async ({ page }) => {
+  test("TC-005: save is blocked when Name is empty", { tag: "@regression" }, async ({ page }) => {
     const suffix = uniqueSuffix();
     const programName = `Web Development 2026 ${suffix}`;
     const programs = new ProgramsPage(page);
@@ -139,7 +139,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await expect(programs.rowFor(programName)).toBeVisible();
   });
 
-  test("TC-006: save is blocked when Name contains only whitespace", async ({
+  test("TC-006: save is blocked when Name contains only whitespace", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -155,7 +155,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await expect(programs.rowFor(programName)).toBeVisible();
   });
 
-  test("TC-007: duplicate program name is rejected when uniqueness is required", async ({
+  test("TC-007: duplicate program name is rejected when uniqueness is required", { tag: "@regression" }, async ({
     page,
   }) => {
     test.fail(
@@ -187,7 +187,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     ).toBeTruthy();
   });
 
-  test("TC-008: invalid characters in Name are rejected according to validation rules", async ({
+  test("TC-008: invalid characters in Name are rejected according to validation rules", { tag: "@regression" }, async ({
     page,
   }) => {
     test.fixme(
@@ -224,7 +224,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     }
   });
 
-  test("TC-009: failed save does not partially update any fields", async ({
+  test("TC-009: failed save does not partially update any fields", { tag: "@api" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -246,7 +246,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     );
   });
 
-  test("TC-010: name at minimum valid length is accepted", async ({ page }) => {
+  test("TC-010: name at minimum valid length is accepted", { tag: "@regression" }, async ({ page }) => {
     const suffix = uniqueSuffix();
     const programName = `Web Development 2026 ${suffix}`;
     const minName = `AI ${suffix}`;
@@ -262,7 +262,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await expect(programs.rowFor(minName)).toBeVisible();
   });
 
-  test("TC-011: name exceeding maximum length is rejected", async ({
+  test("TC-011: name exceeding maximum length is rejected", { tag: "@regression" }, async ({
     page,
   }) => {
     test.fixme(
@@ -291,7 +291,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await expect(programs.rowFor(programName)).toBeVisible();
   });
 
-  test("TC-012: name at exact maximum length is accepted", async ({ page }) => {
+  test("TC-012: name at exact maximum length is accepted", { tag: "@regression" }, async ({ page }) => {
     const suffix = uniqueSuffix();
     const programName = `Web Development 2026 ${suffix}`;
     const maxName = "M".repeat(PROGRAM_NAME_MAX_LENGTH);
@@ -310,7 +310,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await expect(modal.programNameInput).toHaveValue(maxName);
   });
 
-  test("TC-013: special characters in Description are preserved safely", async ({
+  test("TC-013: special characters in Description are preserved safely", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -335,7 +335,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await expect(programs.alertDialogs()).toHaveCount(0);
   });
 
-  test("TC-014: leading/trailing spaces in Name are handled consistently", async ({
+  test("TC-014: leading/trailing spaces in Name are handled consistently", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -355,7 +355,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await expect(programs.rowFor(programName)).toHaveCount(0);
   });
 
-  test("TC-015: edit behavior remains correct with very long Description content", async ({
+  test("TC-015: edit behavior remains correct with very long Description content", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -376,7 +376,7 @@ test.describe("Didaxis Studio — edit program (DS-2)", () => {
     await expect(modal.descriptionInput).toHaveValue(longDescription);
   });
 
-  test("TC-016: concurrent update conflict is handled predictably", async ({
+  test("TC-016: concurrent update conflict is handled predictably", { tag: "@regression" }, async ({
     browser,
   }) => {
     const suffix = uniqueSuffix();

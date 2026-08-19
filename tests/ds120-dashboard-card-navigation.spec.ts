@@ -12,7 +12,7 @@ test.describe("Didaxis Studio — dashboard card navigation regression (DS-120)"
     await expect(dashboard.heading).toBeVisible();
   });
 
-  test("TC-001: Programs dashboard card navigates to /programs", async ({
+  test("TC-001: Programs dashboard card navigates to /programs", { tag: "@e2e" }, async ({
     page,
   }) => {
     const dashboard = new DashboardPage(page);
@@ -24,7 +24,7 @@ test.describe("Didaxis Studio — dashboard card navigation regression (DS-120)"
     await expect(programs.heading).toBeVisible();
   });
 
-  test("TC-002: Calendar dashboard card navigates to /calendar", async ({
+  test("TC-002: Calendar dashboard card navigates to /calendar", { tag: "@e2e" }, async ({
     page,
   }) => {
     const dashboard = new DashboardPage(page);
@@ -36,7 +36,7 @@ test.describe("Didaxis Studio — dashboard card navigation regression (DS-120)"
     await expect(calendar.heading).toBeVisible();
   });
 
-  test("TC-003: Validation dashboard card navigates to /validation", async ({
+  test("TC-003: Validation dashboard card navigates to /validation", { tag: "@e2e" }, async ({
     page,
   }) => {
     const dashboard = new DashboardPage(page);
@@ -48,7 +48,7 @@ test.describe("Didaxis Studio — dashboard card navigation regression (DS-120)"
     await expect(validation.heading).toBeVisible();
   });
 
-  test("TC-004: AI Assist dashboard card navigates to /cli", async ({
+  test("TC-004: AI Assist dashboard card navigates to /cli", { tag: "@e2e" }, async ({
     page,
   }) => {
     const dashboard = new DashboardPage(page);

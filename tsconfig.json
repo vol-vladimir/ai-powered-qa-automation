@@ -16,6 +16,7 @@
     "tests/**/*.ts",
     "pages/**/*.ts",
     "support/**/*.ts",
-    "fixtures/**/*.ts"
+    "fixtures/**/*.ts",
+    "test-data/**/*.ts"
   ]
 }

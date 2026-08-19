@@ -17,7 +17,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(programs.heading).toBeVisible();
   });
 
-  test("TC-001: native confirmation dialog is shown when delete is triggered", async ({
+  test("TC-001: native confirmation dialog is shown when delete is triggered", { tag: "@smoke" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -32,7 +32,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(programs.rowFor(name)).toBeVisible();
   });
 
-  test("TC-002: program is removed from the list after deletion is confirmed", async ({
+  test("TC-002: program is removed from the list after deletion is confirmed", { tag: "@smoke" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -48,7 +48,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(programs.rowFor(name)).toHaveCount(0, { timeout: 20_000 });
   });
 
-  test("TC-003: program remains in the list when deletion is cancelled", async ({
+  test("TC-003: program remains in the list when deletion is cancelled", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -62,7 +62,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(programs.descriptionInRow(name)).toHaveText(description);
   });
 
-  test("TC-004: program list reflects deletion immediately without manual refresh", async ({
+  test("TC-004: program list reflects deletion immediately without manual refresh", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -79,7 +79,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(page).toHaveURL(/\/programs/);
   });
 
-  test("TC-005: program is not deleted until OK is clicked on confirmation", async ({
+  test("TC-005: program is not deleted until OK is clicked on confirmation", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -94,7 +94,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(programs.rowFor(name)).toBeVisible();
   });
 
-  test("TC-006: unauthorized user cannot delete a program", async ({ page }) => {
+  test("TC-006: unauthorized user cannot delete a program", { tag: "@regression" }, async ({ page }) => {
     test.skip(
       !process.env.DIDAXIS_NONADMIN_EMAIL || !process.env.DIDAXIS_NONADMIN_PASSWORD,
       "Set DIDAXIS_NONADMIN_EMAIL and DIDAXIS_NONADMIN_PASSWORD to run authorization test",
@@ -136,7 +136,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(programs.rowFor(name)).toBeVisible();
   });
 
-  test("TC-007: program stays in the list when delete API fails after OK", async ({
+  test("TC-007: program stays in the list when delete API fails after OK", { tag: "@api" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -159,7 +159,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
 
   // Product bug DS-52: rapid double-click blocks delete flow
   test(
-    "TC-008: rapid double-click on delete does not cause duplicate DELETE requests",
+    "TC-008: rapid double-click on delete does not cause duplicate DELETE requests", { tag: "@regression" },
     async ({ page }) => {
       test.skip(
         true,
@@ -193,7 +193,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     },
   );
 
-  test("TC-009: deleting a program that no longer exists is handled safely", async ({
+  test("TC-009: deleting a program that no longer exists is handled safely", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -223,7 +223,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     ).toBeVisible();
   });
 
-  test("TC-010: program with special characters in name is deleted successfully", async ({
+  test("TC-010: program with special characters in name is deleted successfully", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -241,7 +241,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(programs.rowFor(name)).toHaveCount(0, { timeout: 20_000 });
   });
 
-  test("TC-011: program with maximum-length name (100 characters) is deleted", async ({
+  test("TC-011: program with maximum-length name (100 characters) is deleted", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -253,7 +253,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(programs.rowFor(name)).toHaveCount(0, { timeout: 20_000 });
   });
 
-  test("TC-012: deleting the last program shows the empty state", async ({
+  test("TC-012: deleting the last program shows the empty state", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -273,7 +273,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     });
   });
 
-  test("TC-013: deleted program does not reappear after browser refresh", async ({
+  test("TC-013: deleted program does not reappear after browser refresh", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -287,7 +287,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(programs.rowFor(name)).toHaveCount(0, { timeout: 20_000 });
   });
 
-  test("TC-014: only the targeted program row is deleted when multiple exist", async ({
+  test("TC-014: only the targeted program row is deleted when multiple exist", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -303,7 +303,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(programs.rowFor(keep)).toBeVisible();
   });
 
-  test("TC-015: confirmation dialog warns about cascade deletion", async ({
+  test("TC-015: confirmation dialog warns about cascade deletion", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -318,7 +318,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(programs.rowFor(name)).toBeVisible();
   });
 
-  test("TC-016: multiple sequential deletions update the list after each confirm", async ({
+  test("TC-016: multiple sequential deletions update the list after each confirm", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -344,7 +344,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     await expect(programs.rowFor(c)).toHaveCount(0, { timeout: 20_000 });
   });
 
-  test("TC-017: delete control is present on each program row", async ({
+  test("TC-017: delete control is present on each program row", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -369,7 +369,7 @@ test.describe("Didaxis Studio — delete program with confirmation (DS-4)", () =
     }
   });
 
-  test("TC-018: delete while Edit Program modal is open for another program", async ({
+  test("TC-018: delete while Edit Program modal is open for another program", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();

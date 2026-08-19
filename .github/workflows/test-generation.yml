@@ -81,6 +81,9 @@ jobs:
           - One ticket per branch/PR when possible.
           - Do not merge PRs; a human approves merge.
           - Stop when the budget of 5 tickets is reached or the In Progress backlog is exhausted.
+
+          Mandatory final step (do not skip):
+          After ticket work, read .cursor/skills/eval-report/SKILL.md and refresh eval-report.md at the repo root (flake rate, heal success, generation-gate pass rate, ask-vs-guess). Commit on branch harness/eval-report and open a PR; do not merge.
           EOF
           )"
 

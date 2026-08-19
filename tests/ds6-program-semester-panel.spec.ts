@@ -10,7 +10,7 @@ test.describe("Didaxis Studio — program semester panel (discovered)", () => {
     await expect(programs.heading).toBeVisible();
   });
 
-  test("TC-001: selecting a program reveals the semester panel", async ({
+  test("TC-001: selecting a program reveals the semester panel", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -29,7 +29,7 @@ test.describe("Didaxis Studio — program semester panel (discovered)", () => {
     await expect(programs.noSemestersMessage).toBeVisible();
   });
 
-  test("TC-002: switching selection updates the semester panel", async ({
+  test("TC-002: switching selection updates the semester panel", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();

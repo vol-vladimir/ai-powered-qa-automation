@@ -22,7 +22,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     await expect(programs.heading).toBeVisible();
   });
 
-  test("TC-001: programs table lists each program with name and description", async ({
+  test("TC-001: programs table lists each program with name and description", { tag: "@smoke" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -45,7 +45,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     }
   });
 
-  test("TC-002: empty state message and create prompt appear when no programs exist", async ({
+  test("TC-002: empty state message and create prompt appear when no programs exist", { tag: "@regression" }, async ({
     page,
   }) => {
     test.skip(
@@ -59,7 +59,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     await expect(programs.createProgramEmptyStateButton).toBeVisible();
   });
 
-  test("TC-003: empty-state create prompt opens the New Program flow", async ({
+  test("TC-003: empty-state create prompt opens the New Program flow", { tag: "@sanity" }, async ({
     page,
   }) => {
     test.skip(
@@ -73,7 +73,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     await expect(programs.newProgramModal.dialog).toBeVisible();
   });
 
-  test("TC-004: programs list remains visible after page reload", async ({
+  test("TC-004: programs list remains visible after page reload", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -89,7 +89,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     await expect(programs.descriptionInRow(name)).toHaveText(desc);
   });
 
-  test("TC-005: empty-state message is not shown when programs exist", async ({
+  test("TC-005: empty-state message is not shown when programs exist", { tag: "@sanity" }, async ({
     page,
   }) => {
     const programs = new ProgramsPage(page);
@@ -98,7 +98,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     await expect(programs.emptyStateMessage).toHaveCount(0);
   });
 
-  test("TC-006: program name and description columns are not blank", async ({
+  test("TC-006: program name and description columns are not blank", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -112,7 +112,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     await expect(programs.descriptionInRow(name)).toHaveText(desc);
   });
 
-  test("TC-007: API failure does not show empty state when programs exist", async ({
+  test("TC-007: API failure does not show empty state when programs exist", { tag: "@api" }, async ({
     page,
   }) => {
     test.fail(
@@ -141,7 +141,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     ).toBeVisible();
   });
 
-  test("TC-008: unauthorized user cannot create programs from the list page", async ({
+  test("TC-008: unauthorized user cannot create programs from the list page", { tag: "@regression" }, async ({
     page,
   }) => {
     test.skip(
@@ -169,7 +169,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     }
   });
 
-  test("TC-009: program names with special characters render correctly", async ({
+  test("TC-009: program names with special characters render correctly", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -183,7 +183,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     await expect(programs.descriptionInRow(name)).toHaveText(desc);
   });
 
-  test("TC-010: maximum-length program name displays without breaking layout", async ({
+  test("TC-010: maximum-length program name displays without breaking layout", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -198,7 +198,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
   });
 
   // Product bug DS-53: empty Description omits description paragraph in list row
-  test("TC-011: program with empty description is listed safely", async ({
+  test("TC-011: program with empty description is listed safely", { tag: "@regression" }, async ({
     page,
   }) => {
     test.fail(
@@ -223,7 +223,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     ).toHaveCount(2);
   });
 
-  test("TC-012: unicode and emoji render correctly in list", async ({
+  test("TC-012: unicode and emoji render correctly in list", { tag: "@regression" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -237,7 +237,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     await expect(programs.descriptionInRow(name)).toHaveText(desc);
   });
 
-  test("TC-013: multiple programs are all visible in the table", async ({
+  test("TC-013: multiple programs are all visible in the table", { tag: "@sanity" }, async ({
     page,
   }) => {
     const suffix = uniqueSuffix();
@@ -258,7 +258,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     }
   });
 
-  test("TC-014: header and New Program action are available when programs exist", async ({
+  test("TC-014: header and New Program action are available when programs exist", { tag: "@sanity" }, async ({
     page,
   }) => {
     const programs = new ProgramsPage(page);
@@ -269,7 +269,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     await expect(programs.newProgramModal.dialog).toBeVisible();
   });
 
-  test("TC-015: programs page has no accessibility violations", async ({
+  test("TC-015: programs page has no accessibility violations", { tag: "@regression" }, async ({
     page,
   }) => {
     test.fail(
@@ -282,7 +282,7 @@ test.describe("Didaxis Studio — program list display (DS-5)", () => {
     expect(results.violations).toEqual([]);
   });
 
-  test("TC-016: programs list page is keyboard operable", async ({ page }) => {
+  test("TC-016: programs list page is keyboard operable", { tag: "@regression" }, async ({ page }) => {
     const programs = new ProgramsPage(page);
     await programs.tabUntilNewProgramFocused();
     await expect(programs.newProgramButton).toBeFocused();

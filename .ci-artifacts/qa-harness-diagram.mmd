@@ -1,0 +1,93 @@
+%%{init: {"flowchart": {"curve": "step", "nodeSpacing": 60, "rankSpacing": 90, "htmlLabels": true}, "themeVariables": {"fontSize": "16px"}} }%%
+flowchart TB
+    subgraph INPUTS[" Inputs / Triggers "]
+        direction LR
+        T1["Jira ticket<br/>(DS-3)"]
+        T2["Failed CI<br/>run id"]
+        T3["Backlog trigger<br/>(Automation / agent -p / batch)"]
+        T4["Coverage gap<br/>(no ticket)"]
+    end
+
+    ORCH["QA Orchestrator<br/><i>.cursor/rules/qa-orchestrator.mdc</i><br/>reads ticket - runs suite - delegates<br/>owns: analyze + Gherkin plan<br/>(never writes tests / files bugs)"]
+
+    INPUTS --> ORCH
+
+    subgraph AGENTS[" Specialist sub-agents (delegated) "]
+        direction LR
+        TW["test-writer<br/>plan to spec in tests/"]
+        TR["triage<br/>red run to root cause<br/>+ classify (read-only)"]
+        BR["bug-reporter<br/>files Jira bug (read-only)"]
+        SH["self-heal<br/>drift to patch POM<br/>+ repair PR"]
+    end
+
+    ORCH -->|"plan ready"| TW
+    ORCH -->|"run is red"| TR
+    ORCH -->|"real app bug"| BR
+    ORCH -->|"drift / test issue"| SH
+
+    TR -.->|"verdict: bug"| ORCH
+    TR -.->|"verdict: drift"| ORCH
+    TW -.->|"spec path"| ORCH
+    SH -.->|"green proof"| ORCH
+
+    subgraph SKILLS[" Skills "]
+        direction LR
+        SK1["jira-ticket-analyzer"]
+        SK2["explore-and-generate"]
+        SK3["pom-conventions"]
+        SK4["api-cleanup"]
+        SK5["ci-failure-triage"]
+        SK6["jira-bug-reporter"]
+        SK7["self-heal"]
+    end
+
+    ORCH -.uses.-> SK1
+    ORCH -.uses.-> SK2
+    TW -.uses.-> SK1
+    TW -.uses.-> SK3
+    TW -.uses.-> SK4
+    TR -.uses.-> SK5
+    BR -.uses.-> SK6
+    SH -.uses.-> SK7
+
+    subgraph TOOLS[" Tools / MCP "]
+        direction LR
+        M1["Atlassian MCP<br/>(Jira)"]
+        M2["GitHub MCP / gh<br/>(runs - PRs)"]
+        M3["Playwright MCP<br/>(a11y snapshot)"]
+        M4["Terminal<br/>npx playwright test"]
+    end
+
+    ORCH --> M1
+    ORCH --> M2
+    ORCH --> M4
+    TR --> M2
+    BR --> M1
+    SH --> M3
+    SH --> M2
+
+    subgraph GUARD[" Guardrails "]
+        direction LR
+        H1["afterFileEdit hook<br/>guard-test-assertions.js<br/>matcher: tests/ - failClosed<br/>blocks weakened expect(...)"]
+        G1["Human approves<br/>every merge & bug"]
+        G2["Loop guard:<br/>3 delegations max<br/>5 heals/run max<br/>no identical re-run x2"]
+    end
+
+    TW -.->|"edits tests/"| H1
+    SH -.->|"edits tests/"| H1
+    ORCH --- G1
+    ORCH --- G2
+
+    classDef orch fill:#1e3a5f,stroke:#4a90d9,color:#fff,stroke-width:2px
+    classDef agent fill:#2d4a2d,stroke:#5cb85c,color:#fff
+    classDef skill fill:#3d3527,stroke:#d9a441,color:#fff
+    classDef tool fill:#3a2d4a,stroke:#a45cd9,color:#fff
+    classDef guard fill:#4a2d2d,stroke:#d95c5c,color:#fff
+    classDef input fill:#2a2a2a,stroke:#888,color:#fff
+
+    class ORCH orch
+    class TW,TR,BR,SH agent
+    class SK1,SK2,SK3,SK4,SK5,SK6,SK7 skill
+    class M1,M2,M3,M4 tool
+    class H1,G1,G2 guard
+    class T1,T2,T3,T4 input
