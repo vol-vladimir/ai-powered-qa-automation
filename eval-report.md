@@ -2,10 +2,10 @@
 
 **Repo:** [vol-vladimir/ai-powered-qa-automation](https://github.com/vol-vladimir/ai-powered-qa-automation)  
 **Window:** last **N = 30** completed `Playwright Tests` workflow runs (`playwright.yml`, via `gh`)  
-**Generated:** 2026-08-20  
+**Generated:** 2026-08-21  
 **Note:** Cursor has no built-in telemetry for these metrics. Every number below was measured from GitHub Actions logs, PR history, Jira REST, or the agent transcript available on this runner.
 
-**Backlog context (this run):** JQL `project = DS AND status = "In Progress" AND (labels is EMPTY OR labels not in (tests-generated))` returned **0** issues. All **11** DS tickets in status In Progress already carry `tests-generated`. No ticket spec/PR was opened this run.
+**Backlog context (this run):** JQL `project = DS AND status = "In Progress" AND (labels is EMPTY OR labels not in (tests-generated))` returned **0** issues. All **11** DS tickets in status In Progress already carry `tests-generated`. Ticket budget was **5**; none were eligible. No ticket spec/PR was opened this run.
 
 ---
 
@@ -14,21 +14,22 @@
 | Metric | Value |
 | --- | --- |
 | **Tests passed only on retry** | **0** |
-| **Flake rate** | **0%** (0 / 268 passed tests in 5 sampled green runs) |
+| **Flake rate** | **0%** (0 / 279 passed tests in 6 sampled green runs) |
 
-**How measured:** Listed the 30 most recent `playwright.yml` runs (`gh run list --workflow=playwright.yml --limit 30`). Outcomes: **20 success / 9 failure / 1 cancelled**. Pulled job logs (`GET /actions/jobs/{id}/logs`) for 5 green runs spanning Jun–Aug 2026:
+**How measured:** Listed the 30 most recent `playwright.yml` runs (`gh run list --workflow=playwright.yml --limit 30`). Outcomes: **20 success / 9 failure / 1 cancelled**. Pulled job logs (`gh run view --log`) for 6 green runs spanning Jun–Aug 2026:
 
 | Run | Event | Date | Playwright summary |
 | --- | --- | --- | --- |
+| [32324459250](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32324459250) | pull_request | 2026-08-20 | 9 passed |
 | [32228851204](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32228851204) | push | 2026-08-19 | 24 passed, 1 skipped |
 | [32224684389](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32224684389) | pull_request | 2026-08-19 | 9 passed |
 | [29050960199](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29050960199) | push (heal branch) | 2026-07-09 | 82 passed, 9 skipped |
 | [29048303175](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29048303175) | workflow_dispatch | 2026-07-09 | 82 passed, 9 skipped |
-| [27748952794](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/27748952794) | push | 2026-06-18 | 71 passed, 9 skipped |
+| [27998564725](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/27998564725) | push | 2026-06-23 | 73 passed, 9 skipped |
 
-Parsed for `N flaky` and `Retry #N`. **None** of those strings appeared. CI sets `retries: 2` when `CI` is set (`playwright.config.ts`).
+Parsed for `N flaky` and `Retry #N`. **Zero** matches across all six logs. CI sets `retries: 2` when `CI` is set (`playwright.config.ts`).
 
-**What it tells us:** Retries are armed but not masking instability in this sample — green runs finish without Playwright’s flaky bucket. Slice-scoped jobs (PR smoke = 9 tests, push sanity = 24) also mean flake would be easier to miss than on a full-suite dispatch.
+**What it tells us:** Retries are armed but not masking instability in this sample — green runs finish without Playwright’s flaky bucket. Slice-scoped jobs (PR smoke = 9 tests, push sanity ≈ 24) also mean flake would be easier to miss than on a full-suite dispatch.
 
 ---
 
@@ -43,7 +44,7 @@ Parsed for `N flaky` and `Retry #N`. **None** of those strings appeared. CI sets
 **How measured:** All repo PRs (`gh pr list --state all`). One classified locator-heal cycle in the window:
 
 1. **Red (drift):** run [29049033045](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29049033045) — commit `600eb58` (“Braking locators for self healing test”).
-2. **Heal:** PR [#7](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/7) restored the role-based semester-panel heading locator; run [29050960199](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29050960199) green on the heal branch.
+2. **Heal:** PR [#7](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/7) restored the role-based semester-panel heading locator; run [29050960199](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29050960199) green on the heal branch; PR body states assertions unchanged; diff is POM-only (`pages/programs.page.ts`).
 
 PR [#10](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/10) reused the heal branch name but merged constitution/harness docs, not a second locator repair. Grep of `pages/` found **no** `expect(` — assertions stay in specs.
 
@@ -58,7 +59,7 @@ PR [#10](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/10) reuse
 | **PRs with `tests-generated` label** | **7** (#2, #3, #4, #5, #6, #8, #9) — all **merged** |
 | **Pass (green + conforming + maps-to-AC on first PR)** | **4 / 7 (57%)** |
 
-**How measured:** `gh pr list --label tests-generated --state all`. `statusCheckRollup` is empty on every labeled PR (no recorded GitHub check at merge time). First-PR **green** is therefore **agent-cited local `npx playwright test` in the PR body**, except that `playwright.yml` now has `on: pull_request` smoke — first evidence in this window is run [32224684389](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32224684389) on PR #10 (not a `tests-generated` PR). Conforming = spot-check of merged specs on `main` (POM usage, one slice tag per `test()`, no constitution WON’T). Maps-to-AC = linked `features/DS-*.feature.md`.
+**How measured:** `gh pr list --label tests-generated --state all`. `statusCheckRollup` is empty on every labeled PR (no recorded GitHub check at merge time). First-PR **green** is therefore **agent-cited local `npx playwright test` in the PR body**, except that `playwright.yml` now has `on: pull_request` smoke — evidence in this window includes runs [32224684389](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32224684389) and [32324459250](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32324459250) (harness/heal PRs, not `tests-generated`). Conforming = spot-check of merged specs on `main` (POM usage, one slice tag per `test()`, no constitution WON’T). Maps-to-AC = linked `features/DS-*.feature.md` (all seven feature files present on `main`).
 
 | PR | Ticket | First-PR green | Conforming | Maps to AC |
 | --- | --- | --- | --- | --- |
@@ -69,6 +70,8 @@ PR [#10](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/10) reuse
 | #6 | DS-129 | ✅ 3 passed (with `test.fail`) | ❌ `tests/ds129-case-duplicate-edit.spec.ts` has **no** `{ tag }` on `test()` | ✅ `features/DS-129.feature.md` |
 | #8 | DS-119 | ✅ 7 passed locally (agent claim); no PR check | ❌ `tests/ds119-dashboard-display.spec.ts` has **no** slice tags | ✅ `features/DS-119.feature.md` |
 | #9 | DS-214 | ✅ 9 scenarios locally (agent claim); no PR check | ❌ no slice tags; hardcoded `DEFAULT_PASSWORD = "Password1!"` | ✅ `features/DS-214.feature.md` |
+
+Post-merge signal: push run [32223595861](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32223595861) after merging #8 finished **1 failed / 89 passed** (strict-mode locator collision on program-row assertions) — not counted as a generation-gate fail (gate is first-PR), but it shows merge-time agent green ≠ main green.
 
 **What it tells us:** Earlier generated specs still look merge-ready; later ones (#6, #8, #9) landed without the constitution tag (and #9 with a hardcoded password), so **generation is not a reliable first-PR gate**. PR smoke now exists, but it never ran on these seven PRs.
 
@@ -82,7 +85,7 @@ PR [#10](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/10) reuse
 | **Guess** | **0** |
 | **Ask ratio when uncertain** | **n/a** (0 / 0 — no ask-or-guess fork this session) |
 
-**How measured:** This Actions runner has **1** agent transcript (`agent-transcripts/ffc8c82b-…jsonl`, this backlog run). There were **no** `AskQuestion` tool calls. Product values were taken from evidence: Jira REST (`ATLASSIAN_*` + JQL), `gh` run/PR APIs (`CURSOR_GH_MCP` as `GH_TOKEN`), and repo files (`tests/`, `pages/`, `features/`). No invented ticket keys, labels, or UI copy.
+**How measured:** This Actions runner has **1** agent transcript (this backlog run). There were **no** `AskQuestion` tool calls. Product values were taken from evidence: Jira REST (`ATLASSIAN_*` + backlog JQL), `gh` run/PR APIs (`CURSOR_GH_MCP` as `GH_TOKEN`), and repo files (`tests/`, `pages/`, `features/`). No invented ticket keys, labels, or UI copy.
 
 **Data gap:** The 2026-08-18 report counted **51** historical transcripts (Ask 8 / Guess 3). Those files are **not** on this runner, so they were not re-counted. Do not treat the prior 73% as re-measured today.
 
@@ -92,7 +95,7 @@ PR [#10](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/10) reuse
 
 ## Top reliability risk
 
-**Generation queue is stuck and later generated specs skipped the tag/secret rules.** Every In Progress DS ticket already has `tests-generated`, so scheduled backlog mode will keep producing empty ticket work (this run). Meanwhile merged specs for DS-119, DS-129, and DS-214 omit slice tags, so `npm run test:smoke` / `test:sanity` will not execute them. DS-214 also embeds a password literal. PR CI smoke exists now, but it did not gate those PRs.
+**Generation queue is stuck and later generated specs skipped the tag/secret rules.** Every In Progress DS ticket already has `tests-generated`, so scheduled backlog mode will keep producing empty ticket work (this run included). Meanwhile merged specs for DS-119, DS-129, and DS-214 omit slice tags, so `npm run test:smoke` / `test:sanity` will not execute them. DS-214 also embeds a password literal. PR CI smoke exists now, but it did not gate those PRs.
 
 ## Next action
 
