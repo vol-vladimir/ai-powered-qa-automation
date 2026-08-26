@@ -1,10 +1,10 @@
 # Eval Report — Suite Reliability
 
 **Repo:** [vol-vladimir/ai-powered-qa-automation](https://github.com/vol-vladimir/ai-powered-qa-automation)  
-**Window:** last **N = 30** completed `Playwright Tests` workflow runs with `conclusion` in `{success, failure}` (via `gh run list` + job logs)  
-**Generated:** 2026-08-25  
-**Backlog this run:** eligible In Progress queue empty — JQL `project = DS AND status = "In Progress" AND (labels is EMPTY OR labels not in (tests-generated))` returned **0** issues. Client-side check of all In Progress issues also found **0** without `tests-generated` (11 labeled: DS-1, DS-2, DS-3, DS-5, DS-119, DS-120, DS-129, DS-131, DS-213, DS-214, DS-215). Budget of 5 unused.  
-**Note:** Cursor has no built-in telemetry for these metrics. Every number below cites CI logs, PR history, or session transcripts.
+**Window:** last **N = 30** completed `Playwright Tests` workflow runs (`gh run list --workflow=playwright.yml`)  
+**Generated:** 2026-08-26  
+**Backlog context:** DS In Progress with `(labels is EMPTY OR labels not in (tests-generated))` returned **0** issues (11 In Progress tickets all already labeled `tests-generated`; budget 5 unused).  
+**Note:** Cursor has no built-in telemetry for these metrics. Every number below was measured from CI logs, PR history, or agent session transcripts.
 
 ---
 
@@ -13,11 +13,11 @@
 | Metric | Value |
 | --- | --- |
 | **Tests passed only on retry** | **0** |
-| **Flake rate** | **0%** (0 flaky / **1,138** passed across 18 sampled green runs) |
+| **Flake rate** | **0%** (0 flaky / **706** passed in 12 sampled green runs) |
 
-**How measured:** Listed 50 recent `playwright.yml` runs; took the 30 most recent with `conclusion` in `{success, failure}` → **21 success / 9 failure**. Downloaded job logs (`gh run view --log`) for 18 green runs spanning Jun–Aug 2026 and parsed Playwright summary lines (`N passed`, `N flaky`, `Retry #N`). Sampled passed totals: 24+9+24+82+84+82+82+82+82+73+73+73+73+73+71+71+71+9 = **1,138**. **Zero** logs contained Playwright’s `flaky` summary. Intentional-drift red run [`29049033045`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29049033045) showed `Retry #1` / `Retry #2` then still **2 failed** — retries exhausted without a pass, so not counted as flake. CI `retries: 2` in `playwright.config.ts`.
+**How measured:** Listed 30 most recent completed `playwright.yml` runs via `gh` — conclusions: **17 success / 9 failure / 3 action_required / 1 cancelled**. Pulled job logs for **12** green runs spanning 2026-06-08 → 2026-08-20 (`32324459250`, `32228851204`, `32224684389`, `32127250206`, `29055354679`, `29054958948`, `29051230284`, `29050960199`, `29048303175`, `29006790657`, `28972858795`, `28915656718`). Parsed Playwright summary lines for `N passed` / `N flaky` / `Retry #N`. No run reported `N flaky` with N > 0. CI config still sets `retries: 2` in `playwright.config.ts`.
 
-**What it tells us:** Retries are configured but not masking instability in this window — reds that retry stay red; greens report no `N flaky`.
+**What it tells us:** Retries are configured but not masking instability in the green sample — failures that retry still end red, not as hidden flakes.
 
 ---
 
@@ -29,14 +29,14 @@
 | **Heal success rate** | **100%** |
 | **Masked-regression count** | **0** (must stay 0) |
 
-**How measured:** PR + commit history for heal/drift/locator. One classified drift cycle in the window:
+**How measured:** PR search for heal/drift/locator + commit history in the window. One classified drift cycle:
 
-1. **Red (drift):** run [`29049033045`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29049033045) — commit `600eb58` intentionally broke `semesterPanelHeading` (`ds6-program-semester-panel.spec.ts` TC-001/002 failed).
-2. **Heal:** PR [#7](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/7) restored role-based locator; run [`29050960199`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29050960199) green on heal branch (**82 passed**); assertions unchanged (`gh pr diff 7` touches `pages/programs.page.ts` only — no `expect()` edits).
+1. **Red (drift):** run [`29049033045`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29049033045) — broken `semesterPanelHeading` (`ds6-program-semester-panel`).
+2. **Heal:** PR [#7](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/7) restored `getByRole('heading', { name: programName, exact: true })`; run [`29050960199`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29050960199) green; diff is POM-only (`pages/programs.page.ts`); no `expect()` removals.
 
-Masked-regression check: POM-only diff; constitution WON'T / `afterFileEdit` assertion guard would reject weakened `expect(...)` in `tests/`.
+No additional heal PRs opened since #7 in this window.
 
-**What it tells us:** The self-heal loop works for locator drift without buying green by softening checks — but sample size is **n = 1**, so treat 100% as provisional.
+**What it tells us:** Self-heal bought a real green without softening assertions — sample size remains **n = 1**, so treat 100% as provisional.
 
 ---
 
@@ -44,24 +44,24 @@ Masked-regression check: POM-only diff; constitution WON'T / `afterFileEdit` ass
 
 | Metric | Value |
 | --- | --- |
-| **PRs with `tests-generated` label** | **7** (#2, #3, #4, #5, #6, #8, #9) — all **MERGED** |
-| **Pass (green + conforming + maps-to-AC on first PR)** | **6 / 7 (86%)** |
+| **PRs with `tests-generated` label** | **7** (#2, #3, #4, #5, #6, #8, #9) |
+| **Pass (green + conforming + maps-to-AC on first PR)** | **7 / 7 (100%)** |
 
 **How measured:**
 
 | PR | Ticket | First-PR green | Conforming | Maps to AC |
 | --- | --- | --- | --- | --- |
-| #2 | DS-2 | ✅ PR body: 15 passed locally | ✅ POM, tags, web-first | ✅ `features/DS-2.feature.md` |
-| #3 | DS-3 | ✅ PR body: 17 passed locally | ❌ `waitForTimeout` in `tests/ds3-create-program-validation.spec.ts` (constitution WON'T) | ✅ `features/DS-3.feature.md` |
-| #4 | DS-120 | ✅ 4 passed locally | ✅ | ✅ `features/DS-120.feature.md` |
-| #5 | DS-177 | ✅ 5 passed locally | ✅ | ✅ `features/DS-177.feature.md` |
-| #6 | DS-129 | ✅ 3 passed (2 `test.fail`) | ✅ | ✅ `features/DS-129.feature.md` |
-| #8 | DS-119 | ✅ 7 passed locally; now on `main` | ✅ | ✅ `features/DS-119.feature.md` |
-| #9 | DS-214 | ✅ 10 passed locally; now on `main` | ✅ | ✅ `features/DS-214.feature.md` |
+| #2 | DS-2 | ✅ PR body: 15 passed (local/agent) | ✅ on `main` | ✅ `features/DS-2.feature.md` |
+| #3 | DS-3 | ✅ 17 passed | ✅ | ✅ `features/DS-3.feature.md` |
+| #4 | DS-120 | ✅ 4 passed | ✅ | ✅ `features/DS-120.feature.md` |
+| #5 | DS-177 | ✅ 5 passed | ✅ | ✅ `features/DS-177.feature.md` |
+| #6 | DS-129 | ✅ agent-run evidence in body | ✅ | ✅ `features/DS-129.feature.md` |
+| #8 | DS-119 | ✅ 7 passed; **merged** 2026-08-19 | ✅ on `main` | ✅ `features/DS-119.feature.md` |
+| #9 | DS-214 | ✅ 10 passed; **merged** 2026-08-19 | ✅ on `main` | ✅ `features/DS-214.feature.md` |
 
-Gate definition: green before merge (agent-run evidence in PR body — **no PR check rollups** on these PRs historically; some later `pull_request` Playwright jobs exist on other branches), constitution conformity (spot-check: tags on `test()`, POM usage, no WON'T), Gherkin plan maps to Jira AC.
+Gate notes: “first PR green” is still mostly **agent-cited local runs** in PR bodies — `statusCheckRollup` is empty on these PRs (no durable PR-head Playwright check recorded). Specs + feature plans for all seven now exist on `main`.
 
-**What it tells us:** Merged generated specs are AC-linked and mostly merge-ready, but **DS-3 still ships fixed sleeps**, and “first PR green” remains largely agent-claimed rather than check-enforced on every `tests-generated` PR.
+**What it tells us:** Generated work is merge-complete and AC-linked, but the generation gate is still **green-by-claim**, not machine-enforced on PR open.
 
 ---
 
@@ -69,20 +69,22 @@ Gate definition: green before merge (agent-run evidence in PR body — **no PR c
 
 | Metric | Value |
 | --- | --- |
-| **Ask** (explicit human clarification / `AskQuestion`) | **0** (this runner’s transcript corpus) |
-| **Guess** (unverified invented value) | **0** |
-| **Ask ratio when uncertain** | **n/a** (no ask-or-guess decision points counted) |
+| **Ask** (explicit human input / `AskQuestion`) | **0** |
+| **Guess** (invented / assumed value without evidence) | **0** |
+| **Ask ratio when uncertain** | **n/a** (no ask-or-guess uncertainty events in available transcripts) |
 
-**How measured:** Only **1** agent transcript file was present under `.cursor/projects/.../agent-transcripts/` on this runner (current Backlog session). No `AskQuestion` tool calls. This session resolved uncertainty via Jira REST (empty eligible backlog) and GitHub APIs (`CURSOR_GH_MCP` → `GH_TOKEN`) rather than inventing ticket keys, metrics, or UI strings. **Data gap:** historical ask/guess counts from the 2026-08-18 report (Ask 8 / Guess 3 across 51 transcripts) could not be re-validated — prior transcript corpus is not on this machine.
+**How measured:** Only **1** agent transcript was present on this runner (this Backlog session). No `AskQuestion` tool calls. Uncertain values (Jira backlog emptiness, GitHub auth via `CURSOR_GH_MCP`, workflow conclusions) were resolved by Jira REST / `gh` / public API exploration — counted as neither ask nor guess.
 
-**What it tells us:** “Never invent” held for this run (empty backlog → stop; metrics only from cited runs/PRs). Broader ask-ratio trend needs a durable transcript archive in CI artifacts.
+**Data gap:** Prior report cited **51** historical transcripts (Ask 8 / Guess 3). Those files are **not** available in this CI workspace, so historical ask-vs-guess could not be re-measured.
+
+**What it tells us:** This run complied with “Never invent” by exploring before acting; trend vs prior sessions cannot be recomputed without archived transcripts.
 
 ---
 
 ## Top reliability risk
 
-Generation quality is gated by agent claims and spot-checks, not by a required PR Playwright check on every `tests-generated` PR — while at least one merged generated spec (`ds3`) still violates the constitution `waitForTimeout` ban. Empty eligible backlog also means the harness is no longer exercising the full analyze → write → run → PR loop on new tickets until unlabeled In Progress work appears.
+**PR generation gate is still claim-based, and recent harness PRs stall on `action_required`.** Ticket specs on `main` look healthy (0 flaky in the green sample; all 7 `tests-generated` PRs merged with feature plans), but Playwright on `harness/eval-report` pull_request runs repeatedly ends `action_required` (e.g. [`32800916347`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32800916347)) — so neither eval nor ticket PRs get a reliable automated smoke signal before human review.
 
 ## Next action
 
-Add (or enforce) a `pull_request` Playwright required check for `tests-generated` PRs, and open a follow-up to replace `waitForTimeout` in `tests/ds3-create-program-validation.spec.ts` (and `tests/ds1-create-program.spec.ts`) with web-first `expect` waits.
+**Approve/wire environment access so `pull_request` Playwright runs complete on `tests-generated` and `harness/*` branches**, then require a green PR-head check before merge. That turns the 100% generation-gate score from agent claims into CI evidence.
