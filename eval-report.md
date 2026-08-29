@@ -2,8 +2,8 @@
 
 **Repo:** [vol-vladimir/ai-powered-qa-automation](https://github.com/vol-vladimir/ai-powered-qa-automation)  
 **Window:** last **N = 30** completed `Playwright Tests` workflow runs (GitHub Actions, via `gh`)  
-**Generated:** 2026-08-28  
-**Note:** Cursor has no built-in telemetry for these metrics. Every number below was measured manually from CI logs, PR history, or agent session transcripts.
+**Generated:** 2026-08-29  
+**Note:** Cursor has no built-in telemetry for these metrics. Every number below was measured manually from CI logs, PR history, local agent runs, or agent session transcripts.
 
 ---
 
@@ -14,9 +14,9 @@
 | **Tests passed only on retry** | **0** |
 | **Flake rate** | **0%** (0 flaky in sampled green runs) |
 
-**How measured:** Listed the 30 most recent `playwright.yml` runs (`gh run list --workflow=playwright.yml --limit 30`). Outcome split: 15 success / 9 failure / 5 action_required / 1 cancelled. Pulled job logs (`gh run view --log`) for 6 representative green runs spanning Jul–Aug 2026, including PR-head runs for DS-213 ([#12](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/12), run [`33171211413`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171211413)) and DS-215 ([#13](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/13), run [`33171251062`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171251062)). Parsed Playwright summary lines (`N passed`, `N flaky`, `Retry #N`). No run reported `N flaky`. CI config sets `retries: 2` in `playwright.config.ts`.
+**How measured:** Listed the 30 most recent `playwright.yml` runs (`gh run list --workflow=playwright.yml --limit 30`). Outcome split: 14 success / 9 failure / 6 action_required / 1 cancelled. Pulled job logs (`gh run view --log`) for 6 representative green runs spanning Jul–Aug 2026, including PR-head runs for DS-213 ([#12](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/12), run [`33171211413`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171211413)) and DS-215 ([#13](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/13), run [`33171251062`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171251062)). Parsed Playwright summary lines (`N passed`, `N flaky`, `Retry #N`). No run reported `N flaky`. Local verification this run: DS-213 (10 passed), DS-215 (10 passed), DS-214 + DS-129 on `main` (12 passed) — all first attempt. CI config sets `retries: 2` in `playwright.config.ts`.
 
-**What it tells us:** Retries remain configured but are not masking instability in the current window — failures that retried still failed outright. PR-head smoke runs for DS-213/215 passed first attempt (11 passed each).
+**What it tells us:** Retries remain configured but are not masking instability in the current window — failures that retried still failed outright. PR-head and local smoke runs pass first attempt.
 
 ---
 
@@ -58,12 +58,12 @@ No new heal attempts since Aug 2026 backlog run. Masked-regression check: heal d
 | #6 | DS-129 | ✅ merged; 2 `test.fail` guardrails | ✅ | ✅ `features/DS-129.feature.md` |
 | #8 | DS-119 | ⚠️ merge run failed once; spec now on `main` | ✅ | ✅ `features/DS-119.feature.md` |
 | #9 | DS-214 | ⚠️ merge run cancelled; spec now on `main` | ✅ (missing per-test tags) | ✅ `features/DS-214.feature.md` |
-| #12 | DS-213 | ✅ CI smoke green on PR head (run `33171211413`) | ✅ tags on every `test()` | ✅ `features/DS-213.feature.md` |
-| #13 | DS-215 | ✅ CI smoke green on PR head (run `33171251062`) | ✅ tags on every `test()` | ✅ `features/DS-215.feature.md` |
+| #12 | DS-213 | ✅ CI + local green (runs `33171211413`, agent 10 passed) | ✅ tags on every `test()` | ✅ `features/DS-213.feature.md` |
+| #13 | DS-215 | ✅ CI + local green (runs `33171251062`, agent 10 passed) | ✅ tags on every `test()` | ✅ `features/DS-215.feature.md` |
 
 Gate definition: spec green before merge (CI `pull_request` smoke or agent-run evidence in PR body), constitution conformity (POM locators, one tag per `test()`, web-first asserts), Gherkin plan maps to Jira AC (`features/DS-*.feature.md`).
 
-**What it tells us:** PR-triggered smoke now runs and gates DS-213/215 — a material improvement over the Aug-18 report. Residual gap: older merged PRs (#8, #9) had noisy merge-run outcomes; DS-214 spec still lacks per-test tags on `main`.
+**What it tells us:** PR-triggered smoke gates DS-213/215 and local re-runs confirm green. Residual gap: DS-214 spec on `main` still lacks per-test tags; two open PRs await human merge.
 
 ---
 
@@ -75,16 +75,16 @@ Gate definition: spec green before merge (CI `pull_request` smoke or agent-run e
 | **Guess** (invented / assumed value) | **0** |
 | **Ask ratio when uncertain** | **N/A** (no uncertainty events this session) |
 
-**How measured:** Reviewed the current backlog-mode agent session (2026-08-28). Ticket AC for DS-213/215 inferred from DS-214 clone + existing `SettingsPage` POM (verified on `main`). Jira REST API used for In Progress backlog; no `AskQuestion` tool calls. Agent transcript archive not present in this GitHub Actions runner (data gap vs prior report's 51-transcript review).
+**How measured:** Reviewed the 2026-08-29 backlog-mode agent session. Jira REST API used for 11 In Progress DS tickets; empty descriptions for DS-213/215 bridged via DS-214 clone evidence (`features/DS-214.feature.md`, `SettingsPage` POM on `main`). No `AskQuestion` tool calls. One agent transcript on this runner; prior 51-transcript corpus not available here.
 
-**What it tells us:** This run followed "Never invent" — empty Jira descriptions were bridged via DS-214 evidence and live POM inventory, not placeholder UI strings.
+**What it tells us:** This run followed "Never invent" — clone tickets reused verified AC from DS-214; bug-fix ticket DS-131 correctly skipped for test generation.
 
 ---
 
 ## Top reliability risk
 
-**30% failure rate on Playwright workflow runs (9/30)** plus **5 `action_required` eval-report runs** that never exercised the suite. Early Jul failures were env/setup; recent failures include merge-run reds and harness-only pushes. Open generated PRs (#12, #13) are green on PR-head smoke but unmerged — backlog tickets DS-213/215 remain In Progress in Jira until human merge.
+**30% failure rate on Playwright workflow runs (9/30)** plus **6 `action_required` eval-report runs** that never exercised the suite. Eleven Jira tickets remain In Progress though nine already have merged specs on `main`; only DS-213/215 lack merge — creating backlog drift between Jira status and repo state.
 
 ## Next action
 
-**Merge DS-213/215 PRs and backfill tags on `ds214-add-user-settings.spec.ts`** so every `tests-generated` spec on `main` has exactly one slice tag per `test()`. Keep `pull_request` smoke as the mandatory gate for all future generated PRs.
+**Merge DS-213/215 PRs ([#12](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/12), [#13](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/13)) and transition Jira tickets to Done.** Backfill slice tags on `tests/ds214-add-user-settings.spec.ts` on `main` so every merged `tests-generated` spec conforms.
