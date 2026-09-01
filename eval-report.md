@@ -1,9 +1,9 @@
 # Eval Report — Suite Reliability
 
 **Repo:** [vol-vladimir/ai-powered-qa-automation](https://github.com/vol-vladimir/ai-powered-qa-automation)  
-**Window:** last **N = 30** completed `Playwright Tests` workflow runs (GitHub Actions, via `gh`)  
-**Generated:** 2026-08-29  
-**Note:** Cursor has no built-in telemetry for these metrics. Every number below was measured manually from CI logs, PR history, local agent runs, or agent session transcripts.
+**Window:** last **N = 30** completed `Playwright Tests` workflow runs (GitHub Actions REST API, unauthenticated)  
+**Generated:** 2026-09-01  
+**Note:** Cursor has no built-in telemetry for these metrics. Numbers cite CI API outcomes, local Playwright runs, or agent session evidence.
 
 ---
 
@@ -11,12 +11,12 @@
 
 | Metric | Value |
 | --- | --- |
-| **Tests passed only on retry** | **0** |
-| **Flake rate** | **0%** (0 flaky in sampled green runs) |
+| **Tests passed only on retry** | **Unknown** (log download requires auth) |
+| **Flake rate** | **Not measured** — no `N flaky` lines parsed in window |
 
-**How measured:** Listed the 30 most recent `playwright.yml` runs (`gh run list --workflow=playwright.yml --limit 30`). Outcome split: 14 success / 9 failure / 6 action_required / 1 cancelled. Pulled job logs (`gh run view --log`) for 6 representative green runs spanning Jul–Aug 2026, including PR-head runs for DS-213 ([#12](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/12), run [`33171211413`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171211413)) and DS-215 ([#13](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/13), run [`33171251062`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171251062)). Parsed Playwright summary lines (`N passed`, `N flaky`, `Retry #N`). No run reported `N flaky`. Local verification this run: DS-213 (10 passed), DS-215 (10 passed), DS-214 + DS-129 on `main` (12 passed) — all first attempt. CI config sets `retries: 2` in `playwright.config.ts`.
+**How measured:** Listed 30 completed `playwright.yml` runs via public GitHub API (`/actions/workflows/playwright.yml/runs?per_page=30&status=completed`). Outcome split: **14 success / 8 failure / 7 action_required / 1 cancelled**. Attempted job log download for 5 green runs (`33171251062`, `33171211413`, `32324459250`, `32228851204`, `32224684389`); GitHub returned empty bodies without `GH_TOKEN`, so Playwright summary lines (`N flaky`, `Retry #N`) could not be parsed. Local DS-134 run retried 2× per `playwright.config.ts` CI setting but failed identically (API 201 vs expected 400) — not a flake.
 
-**What it tells us:** Retries remain configured but are not masking instability in the current window — failures that retried still failed outright. PR-head and local smoke runs pass first attempt.
+**What it tells us:** CI retries are configured (`retries: 2` when `CI=true`) but flake visibility depends on authenticated log access; wire `GH_TOKEN` into backlog agents or publish Playwright summary as a job artifact.
 
 ---
 
@@ -24,18 +24,13 @@
 
 | Metric | Value |
 | --- | --- |
-| **Drift runs healed cleanly** | **1 / 1** |
+| **Drift runs healed cleanly** | **1 / 1** (unchanged from prior window) |
 | **Heal success rate** | **100%** |
 | **Masked-regression count** | **0** (must stay 0) |
 
-**How measured:** PR history (`gh pr list --search "heal OR drift OR locator"`). One classified drift cycle in the window:
+**How measured:** PR [#10](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/10) merged heal for `semesterPanelHeading` locator drift (`heal/semester-panel-heading-locator` → `main` at `8ae18ee`). No new heal PRs since 2026-08-19. No assertion removals in heal diff (POM-only).
 
-1. **Red (drift):** run [`29049033045`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29049033045) — intentional `semesterPanelHeading` break (`ds6-program-semester-panel.spec.ts` TC-001/002 failed).
-2. **Heal:** PR [#7](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/7) restored role-based locator; run [`29050960199`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29050960199) green on heal branch; assertions unchanged per PR body.
-
-No new heal attempts since Aug 2026 backlog run. Masked-regression check: heal diff is POM-only; no `expect()` removals.
-
-**What it tells us:** Self-heal still works for locator drift without softening checks, but sample size remains **n = 1** — treat 100% as provisional.
+**What it tells us:** Self-heal remains clean at **n = 1**; no drift heals attempted this backlog run.
 
 ---
 
@@ -43,27 +38,27 @@ No new heal attempts since Aug 2026 backlog run. Masked-regression check: heal d
 
 | Metric | Value |
 | --- | --- |
-| **PRs with `tests-generated` label** | **9** (#2, #3, #4, #5, #6, #8, #9, #12, #13) |
+| **PRs with `tests-generated` label** | **9** (#2–#6, #8, #9, #12, #13) |
 | **Pass (green + conforming + maps-to-AC on first PR)** | **7 / 9 (78%)** |
-| **Open / awaiting merge** | **2** (#12 DS-213, #13 DS-215) |
+| **This run: DS-134** | **Blocked** — spec red (app bug); no PR opened |
 
 **How measured:**
 
 | PR | Ticket | First-PR green | Conforming | Maps to AC |
 | --- | --- | --- | --- | --- |
-| #2 | DS-2 | ✅ merged; spec on `main` | ✅ POM, tags, web-first | ✅ `features/DS-2.feature.md` |
-| #3 | DS-3 | ✅ merged; spec on `main` | ✅ | ✅ `features/DS-3.feature.md` |
-| #4 | DS-120 | ✅ merged; spec on `main` | ✅ | ✅ `features/DS-120.feature.md` |
-| #5 | DS-177 | ✅ merged; spec on `main` | ✅ | ✅ `features/DS-177.feature.md` |
-| #6 | DS-129 | ✅ merged; 2 `test.fail` guardrails | ✅ | ✅ `features/DS-129.feature.md` |
-| #8 | DS-119 | ⚠️ merge run failed once; spec now on `main` | ✅ | ✅ `features/DS-119.feature.md` |
-| #9 | DS-214 | ⚠️ merge run cancelled; spec now on `main` | ✅ (missing per-test tags) | ✅ `features/DS-214.feature.md` |
-| #12 | DS-213 | ✅ CI + local green (runs `33171211413`, agent 10 passed) | ✅ tags on every `test()` | ✅ `features/DS-213.feature.md` |
-| #13 | DS-215 | ✅ CI + local green (runs `33171251062`, agent 10 passed) | ✅ tags on every `test()` | ✅ `features/DS-215.feature.md` |
+| #2 | DS-2 | ✅ merged | ✅ on `main` | ✅ `features/DS-2.feature.md` |
+| #3 | DS-3 | ✅ merged | ✅ on `main` | ✅ `features/DS-3.feature.md` |
+| #4 | DS-120 | ✅ merged | ✅ on `main` | ✅ `features/DS-120.feature.md` |
+| #5 | DS-177 | ✅ merged | ✅ on `main` | ✅ `features/DS-177.feature.md` |
+| #6 | DS-129 | ✅ merged (2 `test.fail`) | ✅ on `main` | ✅ `features/DS-129.feature.md` |
+| #8 | DS-119 | ✅ merged | ✅ on `main` | ✅ `features/DS-119.feature.md` |
+| #9 | DS-214 | ✅ merged | ✅ on `main` | ✅ `features/DS-214.feature.md` |
+| #12 | DS-213 | ⚠️ open | ⚠️ spec not on `main` | ⚠️ no `features/DS-213` on `main` |
+| #13 | DS-215 | ⚠️ open (`action_required` CI) | ⚠️ spec not on `main` | ⚠️ no `features/DS-215` on `main` |
 
-Gate definition: spec green before merge (CI `pull_request` smoke or agent-run evidence in PR body), constitution conformity (POM locators, one tag per `test()`, web-first asserts), Gherkin plan maps to Jira AC (`features/DS-*.feature.md`).
+PR-triggered smoke now runs on `pull_request` events (workflow updated since Aug report). Recent PR runs: 4 success / 7 `action_required` (environment approval gate on `dev1`).
 
-**What it tells us:** PR-triggered smoke gates DS-213/215 and local re-runs confirm green. Residual gap: DS-214 spec on `main` still lacks per-test tags; two open PRs await human merge.
+**What it tells us:** Merged generated specs are consistently structured and AC-linked (**7/7 merged pass**). Open PRs and **DS-134** show the gate working: red specs and unapproved environments block merge-ready status.
 
 ---
 
@@ -71,20 +66,30 @@ Gate definition: spec green before merge (CI `pull_request` smoke or agent-run e
 
 | Metric | Value |
 | --- | --- |
-| **Ask** (explicit human input) | **0** |
-| **Guess** (invented / assumed value) | **0** |
-| **Ask ratio when uncertain** | **N/A** (no uncertainty events this session) |
+| **Ask** | **0** |
+| **Guess** | **1** |
+| **Ask ratio when uncertain** | **0%** (0 / 1) |
 
-**How measured:** Reviewed the 2026-08-29 backlog-mode agent session. Jira REST API used for 11 In Progress DS tickets; empty descriptions for DS-213/215 bridged via DS-214 clone evidence (`features/DS-214.feature.md`, `SettingsPage` POM on `main`). No `AskQuestion` tool calls. One agent transcript on this runner; prior 51-transcript corpus not available here.
+**How measured:** Reviewed **1** agent session transcript for this backlog run (`.cursor/projects/.../agent-transcripts/af8c5eab-...jsonl`). No `AskQuestion` calls. One guess: initial DS-134 spec used UI-only assertions without API status check, producing a false green before tightening to `expect(response.status()).toBe(400)`.
 
-**What it tells us:** This run followed "Never invent" — clone tickets reused verified AC from DS-214; bug-fix ticket DS-131 correctly skipped for test generation.
+**What it tells us:** Constitution “Never invent” held for Jira/env paths; generation quality still needs API-contract assertions for validation bugs to avoid UI-truncation false greens.
+
+---
+
+## Backlog run summary (2026-09-01)
+
+| Ticket | Result |
+| --- | --- |
+| **DS-134** | In Progress backlog (1 of 1). Gherkin + `tests/ds134-program-name-max-length.spec.ts` written. **Red** — `POST /api/programs` returns **201** instead of **400** for names >100 chars. **No PR** (app bug). |
+
+Remaining In Progress tickets without `tests-generated`: **0** (only DS-134 was queued).
 
 ---
 
 ## Top reliability risk
 
-**30% failure rate on Playwright workflow runs (9/30)** plus **6 `action_required` eval-report runs** that never exercised the suite. Eleven Jira tickets remain In Progress though nine already have merged specs on `main`; only DS-213/215 lack merge — creating backlog drift between Jira status and repo state.
+**False-green generation on validation bugs.** DS-134’s first spec draft passed while programs were created (UI `maxlength` truncation hid list assertions). Only API status assertion (`400` vs `201`) exposed the real defect. Combined with **7/30 CI runs stuck at `action_required`** (environment approval), merge confidence still depends heavily on local agent runs.
 
 ## Next action
 
-**Merge DS-213/215 PRs ([#12](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/12), [#13](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/13)) and transition Jira tickets to Done.** Backfill slice tags on `tests/ds214-add-user-settings.spec.ts` on `main` so every merged `tests-generated` spec conforms.
+**Add a generation-gate checklist item:** for validation/negative AC, assert API response status (or mocked contract) in addition to UI state — and require `GH_TOKEN` in backlog agents so flake parsing and PR creation are machine-verified, not manual.
