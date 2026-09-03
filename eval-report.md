@@ -1,9 +1,10 @@
 # Eval Report — Suite Reliability
 
-**Repo:** [vol-vladimir/ai-powered-qa-automation](https://github.com/vol-vladimir/ai-powered-qa-automation)  
-**Window:** last **N = 30** completed `Playwright Tests` workflow runs (GitHub Actions public REST API)  
-**Generated:** 2026-09-02  
-**Note:** Cursor has no built-in telemetry for these metrics. Numbers cite CI API outcomes, Jira REST queries, or agent session evidence.
+**Repo:** [vol-vladimir/ai-powered-qa-automation](https://github.com/vol-vladimir/ai-powered-qa-automation)
+**Window:** last N = **30** completed `Playwright Tests` workflow runs (`.github/workflows/playwright.yml` via `gh`)
+**Generated:** 2026-09-03
+**Backlog context:** DS In Progress with `(labels is EMPTY OR labels not in (tests-generated))` returned **0** issues (11 In Progress tickets already labeled `tests-generated`). Ticket budget 5 unused.
+**Note:** Cursor has no built-in telemetry for these metrics. Numbers below cite CI logs, PR history, or session transcripts.
 
 ---
 
@@ -11,12 +12,12 @@
 
 | Metric | Value |
 | --- | --- |
-| **Tests passed only on retry** | **Unknown** (job logs require auth) |
-| **Flake rate** | **Not measured** — no `N flaky` lines parsed in window |
+| **Tests passed only on retry** | **0** |
+| **Flake rate** | **0%** (0 / 418 executed tests in sampled green runs) |
 
-**How measured:** Listed 30 completed `playwright.yml` runs via public GitHub API (`/actions/workflows/playwright.yml/runs?per_page=30&status=completed`). Outcome split: **14 success / 7 failure / 8 action_required / 1 cancelled**. Job log download attempted without `GH_TOKEN`; GitHub returned empty bodies, so Playwright summary lines (`N flaky`, `Retry #N`) could not be parsed. `playwright.config.ts` sets `retries: 2` when `CI=true`.
+**How measured:** Listed 30 most recent `playwright.yml` runs (`gh run list`). Outcomes: **13 success / 7 failure / 9 action_required / 1 cancelled**. Sampled **10** green runs spanning Jul–Aug 2026 (`gh run view --log`); parsed Playwright summary lines for `N passed`, `N flaky`, and `Retry #`. No run reported `flaky > 0` or retry headers. Sample totals: 418 passed across those greens (mix of full-suite ~82 and PR-scoped ~9–24).
 
-**What it tells us:** CI retries are configured but flake visibility still depends on authenticated log access or a published Playwright summary artifact.
+**What it tells us:** Retries (`retries: 2` in CI) are not masking instability in this window — greens are clean on first pass; reds fail for real reasons, not flaky recoveries.
 
 ---
 
@@ -24,13 +25,18 @@
 
 | Metric | Value |
 | --- | --- |
-| **Drift runs healed cleanly** | **1 / 1** (unchanged) |
+| **Drift runs healed cleanly** | **1 / 1** |
 | **Heal success rate** | **100%** |
 | **Masked-regression count** | **0** (must stay 0) |
 
-**How measured:** PR [#10](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/10) merged heal for `semesterPanelHeading` locator drift (`heal/semester-panel-heading-locator` → `main` at `8ae18ee`). No new heal PRs since 2026-08-19. Heal diff is POM-only (`pages/programs.page.ts`); no `expect()` removals.
+**How measured:** PR/commit history in the window. One classified drift → heal cycle:
 
-**What it tells us:** Self-heal remains clean at **n = 1**; no drift heals attempted this backlog run.
+1. **Red (drift):** run [29049033045](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29049033045) — intentional locator break on `semesterPanelHeading` (`600eb58`).
+2. **Heal:** PR [#7](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/7) restored `getByRole('heading', …)`; run [29050960199](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29050960199) green; POM-only diff; PR body states assertions unchanged.
+
+No additional heal/drift PRs since #7. Masked-regression check: heal touched `pages/programs.page.ts` only; no `expect()` removals.
+
+**What it tells us:** Self-heal worked once without softening assertions — sample size remains **n = 1**, so treat 100% as provisional.
 
 ---
 
@@ -39,26 +45,25 @@
 | Metric | Value |
 | --- | --- |
 | **PRs with `tests-generated` label** | **9** (#2–#6, #8, #9, #12, #13) |
-| **Pass (green + conforming + maps-to-AC on first PR)** | **7 / 9 (78%)** |
-| **This run** | **0 tickets processed** — backlog empty |
+| **Pass (green + conforming + maps-to-AC on first PR)** | **9 / 9 (100%)** |
 
 **How measured:**
 
 | PR | Ticket | First-PR green | Conforming | Maps to AC |
 | --- | --- | --- | --- | --- |
-| #2 | DS-2 | ✅ merged | ✅ on `main` | ✅ `features/DS-2.feature.md` |
-| #3 | DS-3 | ✅ merged | ✅ on `main` | ✅ `features/DS-3.feature.md` |
-| #4 | DS-120 | ✅ merged | ✅ on `main` | ✅ `features/DS-120.feature.md` |
-| #5 | DS-177 | ✅ merged | ✅ on `main` | ✅ `features/DS-177.feature.md` |
-| #6 | DS-129 | ✅ merged (2 `test.fail`) | ✅ on `main` | ✅ `features/DS-129.feature.md` |
-| #8 | DS-119 | ✅ merged | ✅ on `main` | ✅ `features/DS-119.feature.md` |
-| #9 | DS-214 | ✅ merged | ✅ on `main` | ✅ `features/DS-214.feature.md` |
-| #12 | DS-213 | ⚠️ open | ⚠️ spec not on `main` | ⚠️ no `features/DS-213` on `main` |
-| #13 | DS-215 | ⚠️ open (`action_required` CI) | ⚠️ spec not on `main` | ⚠️ no `features/DS-215` on `main` |
+| #2 | DS-2 | ✅ agent-cited local (no retained PR checks) | ✅ on `main` | ✅ `features/DS-2.feature.md` |
+| #3 | DS-3 | ✅ agent-cited local | ✅ | ✅ `features/DS-3.feature.md` |
+| #4 | DS-120 | ✅ agent-cited local | ✅ | ✅ `features/DS-120.feature.md` |
+| #5 | DS-177 | ✅ agent-cited local | ✅ | ✅ `features/DS-177.feature.md` |
+| #6 | DS-129 | ✅ agent-cited local | ✅ | ✅ `features/DS-129.feature.md` |
+| #8 | DS-119 | ✅ agent-cited local; merged | ✅ on `main` | ✅ `features/DS-119.feature.md` |
+| #9 | DS-214 | ✅ agent-cited local; merged | ✅ on `main` | ✅ `features/DS-214.feature.md` |
+| #12 | DS-213 | ✅ CI `Playwright (pull_request)` **SUCCESS** | ✅ POM + feature in PR | ✅ `features/DS-213.feature.md` (PR) |
+| #13 | DS-215 | ✅ CI `Playwright (pull_request)` **SUCCESS** | ✅ POM + feature in PR | ✅ `features/DS-215.feature.md` (PR) |
 
-PR-triggered smoke runs on `pull_request` events. Recent window: **14 success / 7 failure / 8 action_required** — many PR runs blocked by `dev1` environment approval.
+Gate notes: older merged PRs still rely on agent-cited local greens (branch checks expired). Newer open PRs (#12, #13) have machine-verified PR smoke. Heal PR #7 and eval PR #11 are outside this label set.
 
-**What it tells us:** Merged generated specs are consistently structured and AC-linked (**7/7 merged pass**). Two open Settings PRs (#12, #13) remain unmerged; environment approval gate is the dominant CI blocker.
+**What it tells us:** Generation output is consistently AC-linked and structured; newer tickets finally get PR-head CI green. Remaining gap: older “first PR green” was never machine-enforced historically.
 
 ---
 
@@ -66,33 +71,28 @@ PR-triggered smoke runs on `pull_request` events. Recent window: **14 success / 
 
 | Metric | Value |
 | --- | --- |
-| **Ask** | **0** |
-| **Guess** | **0** |
-| **Ask ratio when uncertain** | **N/A** (no uncertain decisions required) |
+| **Ask** | **1** (this session) |
+| **Guess** | **0** (this session) |
+| **Ask ratio when uncertain** | **100%** (1 / 1) — **data-gap caveat** |
 
-**How measured:** Reviewed **1** agent session transcript for this backlog run (`.cursor/projects/.../agent-transcripts/5dd98376-...jsonl`). No `AskQuestion` calls. Jira backlog query and repo exploration used API/env evidence; no invented paths, labels, or UI strings.
+**How measured:** Only **1** agent transcript is present on this Actions runner (`agent-transcripts/…/cda379a0-….jsonl`). Counted `AskQuestion` tool usage (1). No invented ticket keys, paths, or UI strings observed — backlog emptiness confirmed via Jira `search/jql` before any spec work. Historical ask/guess corpus from prior reports (51 transcripts) is **not available** on this runner → do not reuse old counts as if re-measured.
 
-**What it tells us:** Constitution "Never invent" held — empty backlog was confirmed via Jira REST before skipping ticket work.
+**What it tells us:** This backlog run correctly stopped when the queue was empty instead of inventing work; transcript retention on CI runners is too thin to trend ask-vs-guess over time.
 
 ---
 
-## Backlog run summary (2026-09-02)
+## Data gaps
 
-| Item | Result |
-| --- | --- |
-| **JQL** | `project = DS AND status = "In Progress" AND (labels is EMPTY OR labels not in (tests-generated))` |
-| **Tickets queued** | **0** |
-| **Tickets processed** | **0** (budget: 5) |
-| **PRs opened** | **0** |
-
-All **11** In Progress DS tickets already carry the `tests-generated` label (DS-1, DS-2, DS-3, DS-5, DS-119, DS-120, DS-129, DS-131, DS-213, DS-214, DS-215). Backlog exhausted — no spec work this run.
+- Job log zip API returned empty for some older jobs; flake scan used `gh run view --log` text instead.
+- Historical agent transcripts not shipped to the runner — ask-vs-guess is session-scoped only.
+- **9 / 30** Playwright runs ended `action_required` (mostly `harness/eval-report` branch) — environment approval blocks inflate non-success without proving product reds.
 
 ---
 
 ## Top reliability risk
 
-**Environment approval blocks PR CI.** **8 / 30** completed runs are `action_required` (mostly `harness/eval-report` and open Settings PRs waiting on `dev1` approval). Merge confidence for generated specs still depends on local agent runs when CI cannot complete.
+**Environment approval (`action_required`) dominates the recent window (9/30)** while the In Progress generation queue is exhausted (all 11 IP tickets already labeled `tests-generated`). That stalls both reliable CI signal and new ticket intake — harness PRs burn runs waiting for approval, and backlog mode has nothing eligible to process until new unlabeled tickets appear or labels are cleared intentionally.
 
 ## Next action
 
-**Unblock PR CI for `tests-generated` branches:** auto-approve or pre-approve the `dev1` environment for PR smoke runs, and add `GH_TOKEN` to backlog agents so flake parsing, PR creation, and log download are machine-verified.
+**Unblock `dev1` / environment approvals for `harness/*` and `tests-generated` PR branches**, and add a scheduled JQL sanity check that alerts when In Progress has zero unlabeled tickets so backlog runs do not silently no-op.
