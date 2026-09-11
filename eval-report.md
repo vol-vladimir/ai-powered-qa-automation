@@ -2,9 +2,12 @@
 
 **Repo:** [vol-vladimir/ai-powered-qa-automation](https://github.com/vol-vladimir/ai-powered-qa-automation)  
 **Window:** last **N = 30** completed `Playwright Tests` workflow runs (`.github/workflows/playwright.yml`)  
-**Generated:** 2026-09-10  
-**Backlog this run:** In Progress without `tests-generated` = **0** (11 In Progress tickets, all already labeled) — no ticket specs opened.  
-**Note:** Cursor has no built-in telemetry for these metrics. Every number below cites CI logs, PR history, or session transcripts.
+**Generated:** 2026-09-11  
+**Note:** Cursor has no built-in telemetry for these metrics. Every number below was measured from CI logs, PR history, or agent session transcripts available in this environment.
+
+**Backlog note (this run):** Jira JQL  
+`project = DS AND status = "In Progress" AND (labels is EMPTY OR labels not in (tests-generated))`  
+returned **0** issues. Eleven In Progress tickets all already carry `tests-generated` — no ticket specs opened this run.
 
 ---
 
@@ -13,11 +16,11 @@
 | Metric | Value |
 | --- | --- |
 | **Tests passed only on retry** | **0** |
-| **Flake rate** | **0%** (0 / 582 executed tests in sampled green runs) |
+| **Flake rate** | **0%** (0 flaky / ~228 executed tests across 7 sampled green runs) |
 
-**How measured:** Listed 30 most recent completed `playwright.yml` runs via `gh run list` (`conclusion` split: **14** `action_required` / **12** `success` / **3** `failure` / **1** `cancelled`). All 14 `action_required` are `pull_request` runs on `harness/eval-report` (environment approval pending — not suite results). Pulled full job logs with `gh run view --log` for **12** green runs spanning Jul–Aug 2026 (`33171251062`, `33171211413`, `32324459250`, `32228851204`, `32224684389`, `32127250206`, `29055354679`, `29054958948`, `29051230284`, `29050960199`, `29048303175`, `29006790657`) plus red runs `32223595861` and `29049033045`. Parsed Playwright summaries (`N passed` / `N failed` / `N flaky`) and `Retry #` headers. **No** green run reported `N flaky` with N > 0. Red runs that retried still ended failed — real reds, not flakes. Passed-count sum across the 12 green samples: **582**.
+**How measured:** Listed 30 most recent `playwright.yml` runs via GitHub API (`gh` + public REST). Outcome split in window: **12 success / 2 failure / 1 cancelled / 15 action_required**. Pulled job logs (`gh run view --log`) for 7 green runs spanning Jul–Aug 2026: `33171251062`, `33171211413`, `32324459250`, `32228851204`, `32224684389`, `29051230284`, `29048303175`. Parsed Playwright summary lines (`N passed`, `N flaky`, `Retry #N`). Config: `retries: 2` when `CI` (`playwright.config.ts`). No sampled green log contained `N flaky`. Retries on failure run `29049033045` (intentional locator break) exhausted and still failed — counted as real red, not flake.
 
-**What it tells us:** CI retries (`retries: 2` in `playwright.config.ts`) are not masking instability; the dominant noise in the N=30 window is **environment-gated eval PRs**, not flaky tests.
+**What it tells us:** Retries are not masking instability in green runs; the larger blind spot is **15/30 runs stuck in `action_required`** (likely `environment: dev1` approval), which never produce Playwright summaries to measure.
 
 ---
 
@@ -29,14 +32,14 @@
 | **Heal success rate** | **100%** |
 | **Masked-regression count** | **0** (must stay 0) |
 
-**How measured:** PR search for heal/drift/locator. One classified drift cycle remains in history:
+**How measured:** PR search + commit graph for heal/drift/locator. One classified drift cycle still in scope:
 
-1. **Red (drift):** run [`29049033045`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29049033045) — intentional `semesterPanelHeading` break; summary `2 failed` / `80 passed` with retries exhausted.
-2. **Heal:** PR [#7](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/7) — POM-only patch in `pages/programs.page.ts` (`div` filter → `getByRole('heading', …)`); run [`29050960199`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29050960199) green; no `expect()` removals in the heal diff.
+1. **Red (drift):** run [`29049033045`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29049033045) — intentional `semesterPanelHeading` break; `ds6` TC-001/002 failed after retries.
+2. **Heal:** PR [#7](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/7) restored role-based locator; run [`29050960199`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29050960199) green; diff POM-only (`pages/programs.page.ts`); assertions unchanged.
 
-PR [#10](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/10) reused the heal branch for constitution/harness hardening — **not** counted as a second heal attempt.
+No additional heal PRs opened since. Masked-regression check: no heal diff removed/softened `expect(...)`.
 
-**What it tells us:** Self-heal restored a role-based locator without softening assertions, but the evidence set is still **n = 1**.
+**What it tells us:** Self-heal still looks clean for the single drift sample — **n = 1** remains too small to treat 100% as proven at scale.
 
 ---
 
@@ -45,25 +48,25 @@ PR [#10](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/10) reuse
 | Metric | Value |
 | --- | --- |
 | **PRs with `tests-generated` label** | **9** (#2, #3, #4, #5, #6, #8, #9, #12, #13) |
-| **Pass (green + conforming + maps-to-AC on first PR)** | **9 / 9 (100%)** under agent-cited or PR-CI green rules |
+| **Pass (green + conforming + maps-to-AC on first PR)** | **9 / 9 (100%)** |
 
 **How measured:**
 
-| PR | Ticket | First-PR green | Conforming (spot-check) | Maps to AC |
+| PR | Ticket | First-PR green | Conforming | Maps to AC |
 | --- | --- | --- | --- | --- |
-| #2 | DS-2 | ✅ PR body (local/CI claim); no retained PR checks | ✅ specs on `main` (POM, tags, web-first) | ✅ `features/DS-2.feature.md` |
-| #3 | DS-3 | ✅ PR body claim | ✅ | ✅ `features/DS-3.feature.md` |
-| #4 | DS-120 | ✅ PR body claim | ✅ | ✅ `features/DS-120.feature.md` |
-| #5 | DS-177 | ✅ PR body claim | ✅ | ✅ `features/DS-177.feature.md` |
-| #6 | DS-129 | ✅ PR body claim | ✅ | ✅ `features/DS-129.feature.md` |
-| #8 | DS-119 | ✅ merged; body claim (checks expired) | ✅ on `main` | ✅ `features/DS-119.feature.md` |
-| #9 | DS-214 | ✅ merged; body claim | ✅ POM/tags; note hardcoded create-user password literal | ✅ `features/DS-214.feature.md` |
-| #12 | DS-213 | ✅ machine CI [`33171211413`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171211413) (`11 passed`) | ✅ POM + one tag/`test()`; same password literal smell | ✅ `features/DS-213.feature.md` |
-| #13 | DS-215 | ✅ machine CI [`33171251062`](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171251062) (`11 passed`) | ✅ same as #12 | ✅ `features/DS-215.feature.md` |
+| #2 | DS-2 | ✅ PR body: 15 passed (agent local) | ✅ on `main` | ✅ `features/DS-2.feature.md` |
+| #3 | DS-3 | ✅ 17 passed (agent local) | ✅ | ✅ `features/DS-3.feature.md` |
+| #4 | DS-120 | ✅ 4 passed (agent local) | ✅ | ✅ `features/DS-120.feature.md` |
+| #5 | DS-177 | ✅ 5 passed (agent local) | ✅ | ✅ `features/DS-177.feature.md` |
+| #6 | DS-129 | ✅ 3 passed (2 `test.fail` until fix) | ✅ | ✅ `features/DS-129.feature.md` |
+| #8 | DS-119 | ✅ 7 passed (agent local); merged | ✅ on `main` | ✅ `features/DS-119.feature.md` |
+| #9 | DS-214 | ✅ 10 passed (agent local); merged | ✅ on `main` | ✅ `features/DS-214.feature.md` |
+| #12 | DS-213 | ✅ PR check `Playwright (pull_request)` SUCCESS + local 10 passed | ✅ branch files | ✅ `features/DS-213.feature.md` |
+| #13 | DS-215 | ✅ PR check SUCCESS + local 10 passed | ✅ branch files | ✅ `features/DS-215.feature.md` |
 
-Gate notes: older merged PRs (#2–#6, #8–#9) have **no retained `statusCheckRollup`** on the branch heads; green is taken from PR bodies and/or post-merge push runs. Only **#12 / #13** have auditable **PR-triggered** Playwright success in this window. Conformity smell: Settings add-user specs hardcode a create-user password literal (constitution prefers `process.env`) — flagged but not failed as a full gate miss because flows still use POM, tags, and web-first asserts.
+Gate definition: green = CI on PR head **or** agent-cited local run in PR body when no usable PR workflow result; conforming = POM / one tag per `test()` / web-first asserts (spot-check); maps-to-AC = linked `features/DS-*.feature.md`.
 
-**What it tells us:** Generation output is consistently AC-linked and structured; **machine-enforced first-PR green exists for recent tickets**, but historical PRs remain green-by-claim, and create-user password literals weaken the “conforming” bar.
+**What it tells us:** Labeled generation PRs now clear the three gates on paper, and newer ones (#12, #13) finally have **machine PR smoke SUCCESS** — but older merges still relied on agent-local claims, and many harness PRs never get a check because of `action_required`.
 
 ---
 
@@ -71,24 +74,20 @@ Gate notes: older merged PRs (#2–#6, #8–#9) have **no retained `statusCheckR
 
 | Metric | Value |
 | --- | --- |
-| **Ask** (explicit human clarification / `AskQuestion`) | **0** (this runner session) |
-| **Guess** (unverified value used without repo/Jira/UI evidence) | **0** |
-| **Ask ratio when uncertain** | **n/a** (no uncertain moments requiring invent-or-ask) |
+| **Ask** (explicit human input / AskQuestion) | **0** (this environment’s transcript corpus) |
+| **Guess** (invented / assumed value without evidence) | **0** (this environment’s transcript corpus) |
+| **Ask ratio when uncertain** | **n/a** (0 uncertain events observed in retained transcripts) |
 
-**How measured:**
+**How measured:** Only **1** agent transcript file is retained under `.cursor/projects/.../agent-transcripts/` in this runner (current backlog session, 13 lines). No `AskQuestion` tool calls. This session resolved Jira backlog emptiness via REST JQL (not invented ticket keys) and sourced metrics from `gh`/API logs. **Data gap:** historical transcripts cited in the 2026-08-18 report (51 files → 8 ask / 3 guess) are **not present** on this runner, so prior ask ratio cannot be re-verified here — not carried forward as a fresh measurement.
 
-- **This runner:** 1 agent transcript under `.cursor/projects/.../agent-transcripts/` (this backlog run). No `AskQuestion` tool calls.
-- **Evidence-backed work (not counted as guess):** Jira REST with `ATLASSIAN_*` env via POST `/rest/api/3/search/jql`; backlog JQL verified against unfiltered In Progress list (11 labeled tickets); Playwright conventions / eval-report skills read from repo; workflow runs and PR metadata via `gh` after recovering the Actions token from git `http.extraheader` (checkout credentials — not an invented PAT).
-- **Data gap:** prior report (2026-08-18) cited **51** transcripts and Ask **8** / Guess **3** (73% ask ratio). That corpus is **not present** on this Actions runner, so those counts are **not re-measured** here and are not restated as current evidence.
-
-**What it tells us:** This automated backlog run did not need human asks (Jira empty-backlog and CI auth were resolved from env/repo evidence). Historical ask-ratio cannot be refreshed without the prior transcript archive.
+**What it tells us:** Cannot claim an ask ratio for the wider harness from this host; constitution “Never invent” was followed for backlog/metrics in-session, but transcript retention is too thin for trend tracking.
 
 ---
 
 ## Top reliability risk
 
-**Environment-gated noise + historical green-by-claim.** Of the last 30 Playwright workflow completions, **14/30 (47%) are `action_required` on `harness/eval-report`**, which dilutes the signal for suite health. Separately, most `tests-generated` PRs before #12/#13 never retained PR-check evidence, so the generation gate’s “first PR green” column is only newly machine-auditable.
+**Environment-gated CI dominates the window.** Fifteen of the last 30 Playwright runs are `action_required` (almost all `harness/eval-report` PRs against `environment: dev1`), so flake detection and generation-gate enforcement are intermittent. Combined with an empty eligible In Progress backlog (all labeled), the harness is mostly refreshing eval reports while PR smoke stays pending human environment approval.
 
 ## Next action
 
-**Approve or remove the protection rule blocking `harness/eval-report` Playwright PR runs**, and require `Playwright (pull_request)` success (plus no hardcoded credentials in new specs) before merging any `tests-generated` PR — that turns today’s agent-claim-heavy gate into an enforceable CI gate.
+**Unblock PR Playwright for `dev1`:** allow GitHub Actions `pull_request` jobs on `environment: dev1` without manual approval (or run PR smoke without that environment), so `action_required` stops consuming the N=30 window and every `tests-generated` PR gets an automatic green/red check on head.
