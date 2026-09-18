@@ -1,13 +1,13 @@
 # Eval Report — Suite Reliability
 
 **Repo:** [vol-vladimir/ai-powered-qa-automation](https://github.com/vol-vladimir/ai-powered-qa-automation)  
-**Window:** last **N = 30** completed `Playwright Tests` workflow runs (GitHub Actions via `gh`)  
-**Generated:** 2026-09-17  
+**Window:** last **N = 30** completed `Playwright Tests` workflow runs (GitHub Actions via `gh` + REST)  
+**Generated:** 2026-09-18  
 **Note:** Cursor has no built-in telemetry for these metrics. Every number below was measured from CI logs, PR history, or agent session transcripts available on this runner.
 
 **Backlog context (this run):** JQL  
 `project = DS AND status = "In Progress" AND (labels is EMPTY OR labels not in (tests-generated))`  
-returned **0** issues. Eleven In Progress tickets exist; all already carry `tests-generated`. No ticket specs or ticket PRs were opened.
+returned **0** issues. Eleven In Progress tickets exist; all already carry `tests-generated`. No ticket specs or ticket PRs were opened. Budget was 5; backlog exhausted first.
 
 ---
 
@@ -16,11 +16,11 @@ returned **0** issues. Eleven In Progress tickets exist; all already carry `test
 | Metric | Value |
 | --- | --- |
 | **Tests passed only on retry** | **0** |
-| **Flake rate** | **0%** (0 flaky / **336** passed across all **9** green runs in the window) |
+| **Flake rate** | **0%** (0 flaky / **254** passed across all **8** green runs in the window) |
 
-**How measured:** Listed 30 most recent `playwright.yml` runs. Outcomes: **9 success**, **1 failure**, **1 cancelled**, **19 action_required**. Pulled full job logs (`gh run view --log`) for every success in the window (`33171251062`, `33171211413`, `32324459250`, `32228851204`, `32224684389`, `32127250206`, `29055354679`, `29054958948`, `29051230284`). Parsed Playwright summaries (`N passed` / `N skipped` / `N flaky` / `Retry #N`). No run reported `flaky` or `Retry #`. CI still configures `retries: 2` when `CI` is set (`playwright.config.ts`).
+**How measured:** Listed 30 most recent `playwright.yml` runs. Outcomes: **8 success**, **1 failure**, **1 cancelled**, **20 action_required**. Pulled job logs for every success in the window (`33171251062`, `33171211413`, `32324459250`, `32228851204`, `32224684389`, `32127250206`, `29055354679`, `29054958948`). Parsed Playwright summaries (`N passed` / `N skipped` / `N flaky` / `Retry #N`). No green run reported `flaky`. The sole failure (`32223595861`) showed `Retry #1`/`#2` then still **1 failed** — not a flake. CI configures `retries: 2` when `CI` is set (`playwright.config.ts`).
 
-**What it tells us:** Retries are configured but not hiding instability in green runs — failures that matter fail outright; the larger window signal is **action_required** starvation, not flake.
+**What it tells us:** Retries are configured but not masking instability in green runs — the dominant window signal is **action_required** starvation (20/30), not flake.
 
 ---
 
@@ -70,18 +70,18 @@ Gate definition: green evidence on first PR (CI check preferred; agent-cited loc
 | Metric | Value |
 | --- | --- |
 | **Ask** | **0** (`AskQuestion` calls) |
-| **Guess** | **0** (invented ticket/path/UI values) |
-| **Ask ratio when uncertain** | **n/a** (no uncertain invented values; evidence gathered instead) |
+| **Guess** | **1** (assumed `CURSOR_GH_MCP` was a usable `gh` PAT; auth failed, then recovered via checkout `extraheader` evidence) |
+| **Ask ratio when uncertain** | **0%** (0 ask / 1 guess) for this session’s uncertain moment |
 
 **How measured:** Only **1** agent transcript is present on this runner (current backlog session). That session queried Jira REST (`/rest/api/3/search/jql`), verified all 11 In Progress issues already have `tests-generated`, and did not invent tickets or AC. Historical “51 transcript” corpus from prior reports is **not available** here — treated as a **data gap**, not re-copied.
 
-**What it tells us:** This run followed “Never invent” via tool evidence; broader ask/guess trend cannot be re-audited without retained transcripts.
+**What it tells us:** Ticket/AC work followed “Never invent” via tool evidence; residual risk is **tooling auth assumptions**, not fabricated UI strings or paths.
 
 ---
 
 ## Top reliability risk
 
-**Environment approval blocking eval/CI feedback.** Nineteen of the last 30 Playwright runs are `action_required` (almost all on `harness/eval-report`), so the scheduled reliability loop often never executes. Combined with older `tests-generated` specs missing required tags (#6/#8/#9), merge review still leans on agent claims for a subset of the suite.
+**Environment approval blocking eval/CI feedback.** Twenty of the last 30 Playwright runs are `action_required` (almost all on `harness/eval-report`), so the scheduled reliability loop often never executes. Combined with older `tests-generated` specs missing required tags (#6/#8/#9), merge review still leans on agent claims for a subset of the suite.
 
 ## Next action
 
