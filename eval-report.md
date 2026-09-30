@@ -1,11 +1,10 @@
 # Eval Report — Suite Reliability
 
-**Repo:** [vol-vladimir/ai-powered-qa-automation](https://github.com/vol-vladimir/ai-powered-qa-automation)
-**Window:** last N = 30 completed `Playwright Tests` workflow runs (`playwright.yml`)
-**Generated:** 2026-09-29
-**Note:** Cursor has no built-in telemetry for these metrics.
-
-Window membership (newest first): runs [36221954976](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/36221954976) (2026-09-26) through [32324459250](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32324459250) (2026-08-20). Outcome split: 20 `action_required`, 7 `failure`, 3 `success`. `gh run view` for every `action_required` and `failure` run in this sample showed **0 jobs**, so those 27 runs never started a Playwright job.
+**Repo:** [vol-vladimir/ai-powered-qa-automation](https://github.com/vol-vladimir/ai-powered-qa-automation)  
+**Window:** last **N = 30** completed `Playwright Tests` workflow runs (`.github/workflows/playwright.yml`)  
+**Generated:** 2026-09-30  
+**Backlog run:** DS In Progress tickets missing `tests-generated`: **0**. All **11** In Progress issues (DS-1, DS-2, DS-3, DS-5, DS-119, DS-120, DS-129, DS-131, DS-213, DS-214, DS-215) already carry that label. No spec was added.  
+**Note:** Cursor has no built-in telemetry for these metrics. Every number below was measured from the public GitHub Actions/PR API, `git`, or the one transcript stored on this runner. `GH_TOKEN` in the agent environment was rejected (401). Job logs returned **403** (`Must have admin rights to Repository`).
 
 ---
 
@@ -13,12 +12,27 @@ Window membership (newest first): runs [36221954976](https://github.com/vol-vlad
 
 | Metric | Value |
 | --- | --- |
-| **Tests passed only on retry** | 0 |
-| **Flake rate** | 0% (0 flaky / 31 tests in the green sample) |
+| **Tests passed only on retry** | **Not measured** |
+| **Flake rate** | **Not measured** (log download 403; do not treat as 0%) |
 
-**How measured:** `gh run list --workflow playwright.yml --limit 30`. The only green runs in the window are [33171251062](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171251062) (11 passed), [33171211413](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171211413) (11 passed), and [32324459250](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32324459250) (9 passed). Full job logs (`gh run view --log`) contain no `flaky` summary and no `Retry #` lines. `playwright.config.ts` sets `retries: 2` when `CI` is set.
+**How measured:** `GET /repos/vol-vladimir/ai-powered-qa-automation/actions/workflows/playwright.yml/runs?status=completed&per_page=30` on 2026-09-30. Window span: [run 32439701946](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32439701946) (2026-08-21) through [run 36532342578](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/36532342578) (2026-09-29).
 
-**What it tells us:** In the three runs that actually executed Playwright, retries did not hide any passing-on-retry tests.
+| Conclusion | Runs | Jobs started |
+| --- | --- | --- |
+| `action_required` | 21 | 0 (created_at equals updated_at; no job list) |
+| `failure` | 7 | 0 (updated ~30 days after creation; still an empty job list) |
+| `success` | 2 | 1 each |
+
+The only runs that executed Playwright:
+
+| Run | When | Result | What ran |
+| --- | --- | --- | --- |
+| [33171211413](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171211413) | 2026-08-28 | success | PR smoke for DS-213 (`Run smoke tests` success; sanity/full skipped) |
+| [33171251062](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171251062) | 2026-08-28 | success | PR smoke for DS-215 (same step pattern) |
+
+`GET .../actions/jobs/{id}/logs` for jobs `98848561414` and `98848695313` returned 403, so `N flaky` and `Retry #N` lines could not be parsed. Check-run output summaries were empty. CI still sets `retries: process.env.CI ? 2 : 0` in `playwright.config.ts`.
+
+**What it tells us:** The last 30 completed runs do not show whether retries are hiding flakes — 28 of them never started a test job, and the two that did refuse log reads without admin rights.
 
 ---
 
@@ -26,13 +40,19 @@ Window membership (newest first): runs [36221954976](https://github.com/vol-vlad
 
 | Metric | Value |
 | --- | --- |
-| **Drift runs healed cleanly** | 0 / 0 |
-| **Heal success rate** | n/a (no drift heal attempts in this window) |
-| **Masked-regression count** | 0 |
+| **Drift runs healed cleanly** | **0 / 0** inside the N = 30 window; **1 / 1** outside it |
+| **Heal success rate** | **n/a in window** (no attempts). **100% (1/1)** on the earlier heal |
+| **Masked-regression count** | **0** |
 
-**How measured:** `gh pr list --search "heal OR drift OR locator in:title"` plus the full PR list. The only locator-heal PR is [#7](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/7), merged 2026-07-09, which is older than the earliest run in this 30-run window (2026-08-20). Its diff is `pages/programs.page.ts` only and the PR body states assertions were unchanged. [#10](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/10) is harness hardening, not a drift patch. No heal PR was opened or merged inside this window.
+**How measured:** PR search `repo:vol-vladimir/ai-powered-qa-automation is:pr` (13 PRs). The only heal/drift PR is [#7](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/7) (merged 2026-07-09, before this window).
 
-**What it tells us:** This window does not contain a new self-heal cycle to score.
+1. **Red (drift):** [run 29049033045](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29049033045) — `failure` on `main` (2026-07-09), job step `Run Playwright tests` failed.
+2. **Heal:** commit `123f2ac` changes only `pages/programs.page.ts` (locator `div` text filter restored to `getByRole('heading', { name: programName, exact: true })`). Diff contains no `expect(`, `waitForTimeout`, or XPath lines.
+3. **Green re-run:** [run 29050960199](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29050960199) — `success` on `heal/semester-panel-heading-locator`; same head SHA as PR #7 (`123f2ac8`).
+
+No heal/drift title appears among the 30 window runs (they are eval-report PRs plus DS-213/DS-215).
+
+**What it tells us:** The one recorded self-heal bought a green run with assertions left intact, but it sits outside the current window, so the last 30 runs add no new heal evidence.
 
 ---
 
@@ -40,26 +60,26 @@ Window membership (newest first): runs [36221954976](https://github.com/vol-vlad
 
 | Metric | Value |
 | --- | --- |
-| **PRs with tests-generated label** | 9 |
-| **Pass (green + conforming + maps-to-AC on first PR)** | 2 / 9 |
+| **PRs with `tests-generated` label** | **9** (#2, #3, #4, #5, #6, #8, #9, #12, #13) |
+| **Pass (green + conforming + maps-to-AC on first PR)** | **0 / 9 (0%)** |
 
-**How measured:** `gh pr list --label tests-generated --state all`, then each PR's files, spec text at the head SHA, and body/`passed` lines. Green means a successful `playwright.yml` run on that PR, or a local pass count written in the PR body when no job ran. Conforming means the first-PR spec has one `@tag` per `test()`, uses the cleanup fixture or page objects, and does not contain `waitForTimeout`, XPath, or `page.locator(`. Maps to AC means a `features/DS-*.feature.md` file is in the PR.
+**How measured:** `GET /issues?labels=tests-generated&state=all`. Each gate is the generated PR head (not a later rewrite on `main`).
 
-| PR | Ticket | Green | Conforming | Maps to AC |
-| --- | --- | --- | --- | --- |
-| [#2](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/2) | DS-2 | Local claim: 15 passed | First PR contains only `features/DS-2.feature.md` (no spec) | Yes |
-| [#3](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/3) | DS-3 | Local claim: 17 passed | First PR contains only the feature file | Yes |
-| [#4](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/4) | DS-120 | Local claim: 4 passed | Spec has 4 `test()` and 0 tags | Yes |
-| [#5](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/5) | DS-177 | Local claim: 5 passed | Specs have 0 tags | Yes |
-| [#6](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/6) | DS-129 | Local claim: 3 passed | Spec has 2 `test()` and 0 tags | Yes |
-| [#8](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/8) | DS-119 | Local claim: 7 passed | Spec has 6 `test()` and 0 tags | Yes |
-| [#9](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/9) | DS-214 | Local claim: 10 passed | Spec has 9 `test()` and 0 tags | Yes |
-| [#12](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/12) | DS-213 | CI [33171211413](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171211413): 11 passed | 9/9 tests tagged; no `waitForTimeout` / XPath / CSS locator in the spec | Yes |
-| [#13](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/13) | DS-215 | CI [33171251062](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171251062): 11 passed | 9/9 tests tagged; no `waitForTimeout` / XPath / CSS locator in the spec | Yes |
+| PR | Ticket | Green at PR head | Conforming at PR head | Maps to AC | Pass |
+| --- | --- | --- | --- | --- | --- |
+| #2 | DS-2 | Local claim in body: 15 passed, 2 skipped. **0** Actions runs for `eb68f0fe` | POM + cleanup fixture; **no slice tag** on any `test()`; no `waitForTimeout` in this spec | `features/DS-2.feature.md` at that SHA | No |
+| #3 | DS-3 | Local claim: 17 passed, 1 skipped. **0** Actions runs for `ba2d03f9` | **9× `waitForTimeout`** in `tests/ds3-create-program-validation.spec.ts`; **no slice tags** | `features/DS-3.feature.md` | No |
+| #4 | DS-120 | Local claim: 4 passed. **0** Actions runs for `af4c8ab8` | POM; **no slice tags** | `features/DS-120.feature.md` | No |
+| #5 | DS-177 | Local claim: 5 passed. **0** Actions runs for `b772b9e0` | POM; **no slice tags** | `features/DS-177.feature.md` | No |
+| #6 | DS-129 | Local claim: 3 passed (2 `test.fail`). **0** Actions runs for `6985b71c` | POM; **no slice tags** | `features/DS-129.feature.md` | No |
+| #8 | DS-119 | Local claim: 7 passed. **0** Actions runs for `c3951cfa` | POM; **no slice tags** | `features/DS-119.feature.md` | No |
+| #9 | DS-214 | Local claim: 10 passed. **0** Actions runs for `44f73b06` | **no slice tags**; spec sets `const DEFAULT_PASSWORD = "Password1!"` | `features/DS-214.feature.md` | No |
+| #12 | DS-213 | [Run 33171211413](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171211413) success (`npm run test:smoke` = `--grep @smoke` only) and body claim: 10 passed on the spec file | One tag per `test()` (9/9), POM, cleanup fixture, no `waitForTimeout`; **hardcoded `Password1!`** | `features/DS-213.feature.md` on the branch | No |
+| #13 | DS-215 | [Run 33171251062](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171251062) success (smoke grep only) and body claim: 10 passed | Same shape as #12, including **hardcoded `Password1!`** | `features/DS-215.feature.md` on the branch | No |
 
-**What it tells us:** Two open PRs clear all three gates on CI evidence. The other seven miss the conforming gate on the first PR (missing spec, or missing the one-tag-per-test rule).
+Slice tags on the merged specs were added later in commit `7fbdf26` (PR #10, 2026-08-18), not on the generated PR heads #2–#9. That later edit does not count as a first-PR pass.
 
-This backlog run (2026-09-29) pushed `test/DS-131-duplicate-name-on-edit`, `test/DS-213-add-user-settings`, and `test/DS-215-add-user-settings` after local green runs. `POST /pulls` returned HTTP 403: "GitHub Actions is not permitted to create or approve pull requests." Those branches are not in the 9 labeled PRs above.
+**What it tells us:** Every labeled generation PR maps to a Gherkin file, but none was constitution-clean at open time — missing tags and/or a hardcoded password, and DS-3 also sleeps with `waitForTimeout`. Only #12 and #13 have a real PR-head Actions success, and that job ran the smoke grep, not the whole spec.
 
 ---
 
@@ -67,20 +87,28 @@ This backlog run (2026-09-29) pushed `test/DS-131-duplicate-name-on-edit`, `test
 
 | Metric | Value |
 | --- | --- |
-| **Ask** | 0 in this session |
-| **Guess** | 0 in this session |
-| **Ask ratio when uncertain** | Not computed for history (transcript data gap) |
+| **Ask** | **0** |
+| **Guess** | **0** |
+| **Ask ratio when uncertain** | **Not defined** (no uncertain decisions in the available transcript) |
 
-**How measured:** Searched `/home/runner/.cursor/projects` for `*.jsonl` agent transcripts. Count is 0, so the earlier claim of 51 transcripts cannot be re-counted on this runner. This session used Jira REST (`/rest/api/3/search/jql` and issue bodies), existing page objects, and the DS-214 clone link for empty DS-213 and DS-215 descriptions. No `AskQuestion` call. No placeholder label, path, or env var was introduced without that evidence.
+**How measured:** This runner has **1** session file under `agent-transcripts/` (the current backlog session). It contains **0** `AskQuestion` tool calls (string hits are grep patterns, not the tool). Jira eligibility, the 30-run window, PR bodies, and spec contents were read from the Jira REST API, the GitHub API, or git before use. The previous report’s **51** transcripts and **8 ask / 3 guess (73%)** figure are **not on this machine** and are not repeated as a new measurement.
 
-**What it tells us:** This session stayed on repo and Jira evidence. A historical ask ratio needs the transcript files, which are not on this runner.
+**What it tells us:** This run did not invent a backlog ticket or a flake percentage when the APIs came back empty or forbidden; the long-run ask-vs-guess ratio still has a data gap.
+
+---
+
+## Data gaps
+
+- Playwright job logs are admin-only, so flake lines (`N flaky`, `Retry #N`) and passed-test totals for the two green smoke runs were not read.
+- Seven `failure` conclusions and 21 `action_required` conclusions have empty job lists. They are environment-approval outcomes for `harness/eval-report`, not spec failures.
+- Historical agent transcripts cited in the 2026-08-18 report are absent here.
 
 ---
 
 ## Top reliability risk
 
-Twenty-seven of the last 30 Playwright workflow runs never started a job (`action_required` or `failure` with an empty job list), and the Actions token cannot open pull requests. Generated specs can be pushed, and a human still has to create the PR by hand, while the scheduled suite is not producing fresh green-or-red evidence.
+**The Playwright workflow in this window barely runs.** Twenty-eight of the last 30 completed runs never started a job because the `dev1` environment sits on `action_required` (or later flips to `failure` with still no jobs). The two runs that did execute only smoke-grep DS-213 and DS-215, and their logs cannot be read without admin rights. Flake rate is therefore unknown, and `harness/eval-report` pull requests never get a test result.
 
 ## Next action
 
-In the GitHub repository settings, allow GitHub Actions to create pull requests, and approve the `dev1` environment (or remove the protection that leaves `playwright.yml` runs at `action_required` with zero jobs) so the next backlog branch gets a labeled PR and a real Playwright job log.
+Let `pull_request` jobs on the `dev1` environment start without a manual approval, and write Playwright’s summary line (`passed` / `flaky`) into the Actions job summary so flake rate can be measured without admin log download.
