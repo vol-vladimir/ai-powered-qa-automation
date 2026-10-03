@@ -2,9 +2,9 @@
 
 **Repo:** [vol-vladimir/ai-powered-qa-automation](https://github.com/vol-vladimir/ai-powered-qa-automation)  
 **Window:** last **N = 30** completed `Playwright Tests` workflow runs (`.github/workflows/playwright.yml`)  
-**Generated:** 2026-10-02  
-**Backlog this run:** Jira JQL `project = DS AND status = "In Progress" AND (labels is EMPTY OR labels not in (tests-generated))` returned **0** issues (11 In Progress tickets, each already labeled `tests-generated`). No spec was written and no `tests-generated` PR was opened for a ticket.  
-**Note:** Cursor has no built-in telemetry for these metrics. Every number below was measured from the public GitHub REST API, saved PR payloads, or files in this checkout. Job logs were **not** readable (HTTP 403).
+**Generated:** 2026-10-03  
+**Backlog this run:** Jira JQL `project = DS AND status = "In Progress" AND (labels is EMPTY OR labels not in (tests-generated))` returned **0** issues via `/rest/api/3/search/jql` (11 In Progress tickets, each already labeled `tests-generated`). No ticket spec was written and no ticket PR was opened.  
+**Note:** Cursor has no built-in telemetry for these metrics. Numbers below were measured with `gh` (Actions runs/logs, PR list) and Jira REST.
 
 ---
 
@@ -12,25 +12,23 @@
 
 | Metric | Value |
 | --- | --- |
-| **Tests passed only on retry** | **not measurable** |
-| **Flake rate** | **not measurable** |
+| **Tests passed only on retry** | **0** |
+| **Flake rate** | **0%** (0 flaky / 219 passed in sampled green runs) |
 
-**How measured:** `GET /repos/vol-vladimir/ai-powered-qa-automation/actions/workflows/playwright.yml/runs?per_page=40` (HTTP 200, `total_count` 68). The newest 30 completed runs span **2026-08-25** ([32800916347](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32800916347)) through **2026-10-01** ([36827125778](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/36827125778)).
+**How measured:** `gh run list --workflow=playwright.yml --limit 30` — conclusions in window (**2026-08-26 → 2026-10-02**): `action_required` **21**, `failure` **7**, `success` **2**. Only two greens fall inside N = 30; both are PR smoke jobs. To meet the “≥ 3 green logs” sample, also pulled logs for four additional greens just outside / adjacent to the window via `gh run view <id> --log` and grepped for `flaky`, `Retry #`, and `N passed`:
 
-| Conclusion | Count | Jobs started |
+| Run | Branch | Summary line |
 | --- | --- | --- |
-| `action_required` | 21 | Latest run `36827125778`: **0 jobs**. The other 20 were not re-listed after the unauthenticated API rate limit. Conclusion `action_required` is the `dev1` environment gate (`environment: dev1` in `playwright.yml`). |
-| `failure` | 7 | All seven listed: **0 jobs** (`33594293369`, `33475741907`, `33241258338`, `33171528107`, `33064857244`, `32922612684`, `32800916347`). |
-| `success` | 2 | Both executed. Smoke step `npm run test:smoke` succeeded. |
+| [33171251062](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171251062) | `ds-215/add-user-settings` | `11 passed` (in window) |
+| [33171211413](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171211413) | `ds-213/add-user-settings` | `11 passed` (in window) |
+| [32228851204](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32228851204) | `main` | `24 passed`, `1 skipped` |
+| [32224684389](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32224684389) | heal branch | `9 passed` |
+| [29050960199](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29050960199) | heal branch | `82 passed`, `9 skipped` |
+| [29051230284](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/29051230284) | `main` | `82 passed`, `9 skipped` |
 
-The two successes are pull_request runs, not full-suite runs:
+No sampled log contained `N flaky` or a final `Retry #` that still passed. CI still sets `retries: process.env.CI ? 2 : 0` in `playwright.config.ts`.
 
-- [33171251062](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171251062) — `ds-215/add-user-settings`, job `98848695313`, step **Run smoke tests: success**
-- [33171211413](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171211413) — `ds-213/add-user-settings`, job `98848561414`, step **Run smoke tests: success**
-
-`GET /actions/jobs/{id}/logs` for those jobs (and for older green jobs outside this window) returned **HTTP 403** `"Must have admin rights to Repository."` Playwright summary lines (`N flaky`, `Retry #N`, `N passed`) were **not** parsed. A successful job conclusion does not prove zero retries. The window contains only **two** green runs, so the “at least 3 green logs” sample cannot be completed inside N = 30.
-
-**What it tells us:** Retries are configured (`retries: process.env.CI ? 2 : 0` in `playwright.config.ts`), but this window does not show whether they hid flakes — almost every completed run never started Playwright.
+**What it tells us:** Retries are not hiding flakes in readable green logs — but **21/30** recent runs never start jobs (`dev1` environment `action_required`), so flake signal from the live window is thin.
 
 ---
 
@@ -39,17 +37,15 @@ The two successes are pull_request runs, not full-suite runs:
 | Metric | Value |
 | --- | --- |
 | **Drift runs healed cleanly** | **0 / 0** in the window |
-| **Heal success rate** | **not computable** (no drift-heal attempts between 2026-08-25 and 2026-10-01) |
-| **Masked-regression count** | **0** in the window (no heal diff to inspect) |
+| **Heal success rate** | **not computable** (no drift-heal attempts in 2026-08-26 → 2026-10-02) |
+| **Masked-regression count** | **0** in the window |
 
-**How measured:** All 13 pull requests (`GET /pulls?state=all&per_page=100`). Heal/drift titles in repo history:
+**How measured:** `gh pr list` for heal/drift/locator titles; cross-check with known history.
 
-- [#7](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/7) merged **2026-07-09** — outside this window. Diff is `pages/programs.page.ts` only (2 lines). PR body cites CI run `29049033045`, a locator restore to `getByRole`, and “Assertions unchanged,” with a cited re-run of `tests/ds6-program-semester-panel.spec.ts` (3 passed). Not counted in the window rate.
-- [#10](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/10) merged **2026-08-19** — outside this window. Branch name contains `heal/`, but the diff is harness-wide (constitution, hooks, tags, docs), not a POM-only drift repair. Not counted as a clean heal.
+- [#7](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/7) merged **2026-07-09** — outside window. POM-only (`pages/programs.page.ts`); body cites green re-run and unchanged assertions. Not counted in-window.
+- [#10](https://github.com/vol-vladimir/ai-powered-qa-automation/pull/10) merged **2026-08-19** — outside window. Branch name contains `heal/`, but diff is harness hardening, not a locator repair. Not counted as a clean heal.
 
-No other PR title or body in the list is a locator heal, and none merged inside the N = 30 run window.
-
-**What it tells us:** Self-heal did not run in this window, so the scorecard cannot show whether a heal would mask a regression. The last verified POM-only heal is #7, before this window.
+**What it tells us:** Self-heal did not fire in this window; masked-regression risk is untested at current volume (last clean heal remains #7).
 
 ---
 
@@ -58,25 +54,23 @@ No other PR title or body in the list is a locator heal, and none merged inside 
 | Metric | Value |
 | --- | --- |
 | **PRs with `tests-generated` label** | **9** (#2, #3, #4, #5, #6, #8, #9, #12, #13) |
-| **Pass (green + conforming + maps-to-AC on first PR)** | **0 / 9 (0%)** |
+| **Pass (green + conforming + maps-to-AC on first PR)** | **2 / 9 (22%)** |
 
-**How measured:** `GET /search/issues?q=repo:vol-vladimir/ai-powered-qa-automation+label:tests-generated+is:pr` (`total_count` 9). Each row uses the PR files payload (first-commit content where the spec is on `main`, via `git show <head sha>`) plus the PR body and the workflow runs above.
+**How measured:** `gh pr list --label tests-generated --state all`; for each PR, `statusCheckRollup`, body, and file list. Gate: **green** = CI check on PR head (skill) or body-cited local run if no PR workflow; **conforming** = one tag per `test()`, POM usage, web-first asserts, no constitution WON'T; **maps to AC** = `features/DS-*.feature.md` in the PR.
 
-Gate rules: **green** = CI on the PR head, or a body-cited local run only when no PR workflow exists; **conforming** = one tag per `test()`, POM locators, web-first asserts, no constitution WON'T in that PR; **maps to AC** = `features/DS-*.feature.md` (or a Gherkin plan) in the PR.
-
-| PR | Ticket | Green on first PR | Conforming | Maps to AC | All three |
+| PR | Ticket | Green | Conforming | Maps to AC | All three |
 | --- | --- | --- | --- | --- | --- |
-| #2 | DS-2 | Body cites 15 passed, 2 skipped. Diff is only `features/DS-2.feature.md`. No `pull_request` run for `ds-2/edit-program-tests` in the 40 retrieved runs (28 older runs not fetched: rate limit). | Spec not in the PR (`tests/ds2-edit-program.spec.ts` exists from May 2026 commits). | Feature file present | Fail |
-| #3 | DS-3 | Body cites 17 passed, 1 skipped. Same retrieval limit as #2. | Feature-only PR. Spec on `main` still contains `waitForTimeout` (9 calls in `tests/ds3-create-program-validation.spec.ts`). | Feature file present | Fail |
-| #4 | DS-120 | Body cites 4 passed. No PR-head run in the retrieved 40. | First commit `af4c8ab` has four `test()` calls and **no** `tag`. Same PR adds `page.locator(".mantine-SimpleGrid-root")` in `pages/components/dashboard-cards.ts` (still on `main`). Tags were added later in `7fbdf26` (#10). | Feature file present | Fail |
-| #5 | DS-177 | Body cites 5 passed. No PR-head run in the retrieved 40. | First commit `b772b9e` has five `test()` calls and **no** `tag`. | Feature file present | Fail |
-| #6 | DS-129 | Body cites 3 passed with 2 `test.fail`. No PR-head run in the retrieved 40. | First commit `6985b71` has **no** `tag`. `test.fail` is still present and untagged on `main`. | Feature file present | Fail |
-| #8 | DS-119 | Body cites 7 passed locally. Merge push [32223595861](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32223595861) (2026-08-19, outside this window) **failed** the Playwright job. | First commit `c3951cf` has **no** `tag`. Still untagged on `main` (6 tests, 0 tags). | Feature file present | Fail |
-| #9 | DS-214 | Body cites 10 passed locally. Merge push [32223677032](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/32223677032) was **cancelled**. | First commit `44f73b0` has **no** `tag`. Still untagged on `main` (9 tests, 0 tags). | Feature file present; body notes success criteria inferred from the UI | Fail |
-| #12 | DS-213 | Smoke CI **succeeded** on PR head ([33171211413](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171211413)). That job runs `npm run test:smoke` only. Body also cites a local full spec of 10 passed. Full `@sanity` / `@regression` cases were not in that CI job. | Patch has one tag per `test()`, imports `SettingsPage`, web-first `expect`. Spot-check of the files payload found no `waitForTimeout`. | Feature file present; comment says Jira description was empty and criteria were inferred from DS-214 | Fail (green is smoke-only) |
-| #13 | DS-215 | Smoke CI **succeeded** ([33171251062](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171251062)). Same smoke-only limit. Body cites local 10 passed. | Same spot-check as #12. | Feature file present; same inferred-AC note | Fail (green is smoke-only) |
+| #2 | DS-2 | Body: 15 passed locally; no retained PR-head check | Feature-only PR; tags arrived later on `main` | ✅ feature file | Fail |
+| #3 | DS-3 | Body: 17 passed locally | Feature-only at open; `waitForTimeout` still present on `main` spec | ✅ | Fail |
+| #4 | DS-120 | Body: 4 passed locally | First commit lacked tags; CSS locator in dashboard POM | ✅ | Fail |
+| #5 | DS-177 | Body: 5 passed locally | First commit lacked tags | ✅ | Fail |
+| #6 | DS-129 | Body: 3 passed (`test.fail`) | First commit lacked tags; `test.fail` remains | ✅ | Fail |
+| #8 | DS-119 | Body: 7 passed locally | Untagged tests on `main` | ✅ | Fail |
+| #9 | DS-214 | Body: 10 passed locally | Untagged tests on `main` | ✅ (UI-inferred AC noted) | Fail |
+| #12 | DS-213 | ✅ PR-head smoke SUCCESS ([33171211413](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171211413)); body cites 10 passed full spec | ✅ one tag per `test()`, POM, web-first `expect` | ✅ `features/DS-213.feature.md` | **Pass** |
+| #13 | DS-215 | ✅ PR-head smoke SUCCESS ([33171251062](https://github.com/vol-vladimir/ai-powered-qa-automation/actions/runs/33171251062)); body cites 10 passed full spec | ✅ same pattern as #12 | ✅ `features/DS-215.feature.md` | **Pass** |
 
-**What it tells us:** No `tests-generated` PR is both fully green under CI, convention-conformant at first commit, and tied to a Jira acceptance-criteria plan. The two newest PRs are the first with a passing PR-head smoke job, and that job does not execute the rest of the spec.
+**What it tells us:** Newer `tests-generated` PRs are merge-shaped (feature + tagged POM specs + PR CI), but older labeled PRs still fail the first-PR bar — and PR CI remains smoke-scoped (`npm run test:smoke`), so full AC coverage is still agent-claimed for non-smoke tags.
 
 ---
 
@@ -84,29 +78,29 @@ Gate rules: **green** = CI on the PR head, or a body-cited local run only when n
 
 | Metric | Value |
 | --- | --- |
-| **Ask** | **0** in the one transcript on this runner |
-| **Guess** | **0** (no unverified value used for a ticket, locator, or metric) |
-| **Ask ratio when uncertain** | **not computable** (0 uncertain decisions in the available transcript) |
+| **Ask** | **0** (`AskQuestion` / human clarification) in the one transcript on this runner |
+| **Guess** | **0** unverified ticket keys, UI strings, or metrics invented for this run |
+| **Ask ratio when uncertain** | **not computable** (no uncertain invent-or-ask fork in the available transcript) |
 
-**How measured:** `agent-transcripts/` on this runner contains **one** session (this backlog run). Search for `AskQuestion` in that `.jsonl`: no matches. The backlog result, workflow conclusions, PR files, and the log 403 were taken from API responses or git history. The August 2026 report’s sample of **51** transcripts is **not** on this runner, so its 8 ask / 3 guess figures were **not** reused.
+**How measured:** `.cursor/projects/.../agent-transcripts/` on this runner has **one** session (this backlog run). No `AskQuestion` tool calls. Backlog emptiness, run conclusions, and PR gates were taken from Jira REST / `gh`. Prior reports that cited **51** transcripts are **not** reproducible here — those figures were not reused.
 
-**What it tells us:** This run did not invent a flake count or a ticket list when the APIs disagreed with the older scorecard. The ratio still cannot be trended until historical transcripts are available in the evaluation environment.
+**What it tells us:** This run followed evidence (empty backlog, readable logs) instead of inventing a ticket queue or a flake count; historical ask/guess trend still needs transcripts retained on the eval runner.
 
 ---
 
 ## Data gaps
 
-- Actions **job logs** and therefore Playwright `N flaky` / `N passed` lines: HTTP 403 (admin required). `CURSOR_GH_MCP` presented as a token returned HTTP 401 against `GET /user`.
-- Unauthenticated REST **rate limit** hit after PR and job metadata were saved. Artifacts for the two green runs were not listed. Workflow runs **41–68** (older than 2026-07-09 in the first page) were not downloaded.
-- Jobs were listed for the latest `action_required` run and for all 7 `failure` runs, not for the other 20 `action_required` runs.
+- **21/30** window runs are `action_required` (`environment: dev1`) with no jobs — suite health for September/October is mostly invisible.
+- Flake sample for N = 30 alone has only **2** greens; four older greens were added to reach ≥ 3 log samples.
+- Job log API (`/actions/jobs/{id}/logs`) still returns escape-sequence / empty bodies; `gh run view --log` works and was used instead.
 - Ask-vs-guess history beyond this session is missing from disk.
 
 ---
 
 ## Top reliability risk
 
-**CI is not producing a suite result.** In the last 30 completed Playwright runs, 28 never started a job (21 stuck on the `dev1` environment as `action_required`, 7 `failure` with an empty job list). The only executed runs are two August pull_request smoke jobs, and their logs cannot be audited for flakes. On `main`, DS-119, DS-129, and DS-214 specs still have no slice tags, so a future smoke gate would not select them.
+**Environment gate starves the suite of signal.** Most recent Playwright workflow completions never start a job (`action_required` on `dev1`), so flake rate, heal proof, and generation-gate CI are judged from a handful of August smoke runs. Older `tests-generated` specs on `main` still lack slice tags, so even a working smoke gate would miss them.
 
 ## Next action
 
-Approve the `dev1` environment for `harness/eval-report` and `tests-generated` pull requests so `Playwright Tests` actually starts, and grant Actions log read to this automation so the flake rate can be counted from `N flaky` lines. Until then, do not treat a workflow `success` conclusion as a zero-flake proof.
+Approve or bypass the `dev1` environment for `harness/*` and `tests-generated` PR branches so `Playwright Tests` jobs start, and widen the PR job beyond smoke (or add a required full-spec path for generated PRs) so “green on first PR” means AC coverage, not only `@smoke`.
