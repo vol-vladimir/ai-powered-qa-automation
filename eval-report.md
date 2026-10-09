@@ -2,10 +2,10 @@
 
 **Repo:** [vol-vladimir/ai-powered-qa-automation](https://github.com/vol-vladimir/ai-powered-qa-automation)  
 **Window:** last **N = 30** completed `Playwright Tests` workflow runs (`.github/workflows/playwright.yml`, via `gh`)  
-**Generated:** 2026-10-08  
+**Generated:** 2026-10-09  
 **Note:** Cursor has no built-in telemetry for these metrics. Every number below was measured from CI logs, PR history, or this session’s tool evidence.
 
-**Backlog mode (this run):** Blocked — `ATLASSIAN_API_TOKEN` + `ATLASSIAN_EMAIL` return **HTTP 401** on `/rest/api/3/myself` and on `api.atlassian.com/ex/jira/{cloudId}` (cloudId from `/_edge/tenant_info`: `f72d2b24-8968-4705-8538-069e61d5ed43`). Unauthenticated `/rest/api/3/search/jql` returns an empty `issues` array (not a trustworthy backlog). **0 tickets processed.** Atlassian MCP also `needsAuth` (interactive auth unavailable in this Actions agent). No ticket specs or ticket PRs opened.
+**Backlog mode (this run):** Blocked — `ATLASSIAN_API_TOKEN` + `ATLASSIAN_EMAIL` return **HTTP 401** on `/rest/api/3/myself` and on `api.atlassian.com/ex/jira/{cloudId}` (cloudId from `/_edge/tenant_info`: `f72d2b24-8968-4705-8538-069e61d5ed43`). Unauthenticated `/rest/api/3/search/jql` returns an empty `issues` array (not a trustworthy backlog). **0 / 5 ticket budget used.** Atlassian MCP also `needsAuth` (interactive auth unavailable in this Actions agent). No ticket specs or ticket PRs opened. `CURSOR_GH_MCP` PAT is also invalid (**401**); GitHub write used the Actions `ghs_` token from checkout `http.*.extraheader`.
 
 ---
 
@@ -16,7 +16,7 @@
 | **Tests passed only on retry** | **0** |
 | **Flake rate** | **0%** (0 flaky / **88** tests executed across 6 sampled green runs with readable logs) |
 
-**How measured:** Listed 30 most recent completed `playwright.yml` runs: **1 success / 8 failure / 21 action_required**. Pulled job logs (`gh run view --log`) for green runs with retained logs: `33171251062` (11 passed), `33171211413` (11), `32324459250` (9), `32228851204` (24 + 1 skipped), `32224684389` (9), `32127250206` (24 + 1 skipped). Parsed Playwright summaries for `N flaky` / `Retry #N` — **zero hits**. Older green runs in the window no longer expose summary lines via `gh run view --log`. CI still sets `retries: 2` in `playwright.config.ts`.
+**How measured:** Listed 30 most recent completed `playwright.yml` runs: **0 success / 9 failure / 21 action_required** (the lone green previously in-window scrolled out). Pulled job logs (`gh run view --log`) for retained green runs just outside/adjacent: `33171251062` (11 passed), `33171211413` (11), `32324459250` (9), `32228851204` (24 + 1 skipped), `32224684389` (9), `32127250206` (24 + 1 skipped). Parsed Playwright summaries for `N flaky` / `Retry #N` — **zero hits**. CI still sets `retries: 2` in `playwright.config.ts`.
 
 **What it tells us:** Retries are not hiding flake in recent greens — the window’s pain is **jobs never starting** (`action_required` on `environment: dev1`), not intermittent passes.
 
@@ -76,7 +76,7 @@ Gate notes: constitution requires exactly one slice tag per `test()`. Spot-check
 | **Guess** (invented ticket keys / AC / metrics) | **0** |
 | **Ask ratio when uncertain** | **n/a** (0 ask + 0 guess); blocked work escalated instead of inventing |
 
-**How measured:** This Backlog-mode session only (no `agent-transcripts/*.jsonl` on the Actions runner). Uncertainties:
+**How measured:** This Backlog-mode session (1 transcript on the Actions runner: current conversation). Uncertainties:
 
 - Invalid `CURSOR_GH_MCP` → recovered Actions token from `git` `http.*.extraheader` (evidence), not guessed.
 - Jira **401** → **stopped ticket processing** rather than inventing In Progress keys from open GitHub PRs.
@@ -90,7 +90,7 @@ Gate notes: constitution requires exactly one slice tag per `test()`. Spot-check
 
 ## Top reliability risk
 
-**Broken Jira secrets + `environment: dev1` approval starvation.** This run could not read the In Progress backlog at all (401). Independently, **21/30** recent Playwright conclusions are `action_required` with no jobs executed — mostly `harness/eval-report` PRs waiting on the `dev1` environment gate — so flake detection and generation-gate CI proof stay blind even when the suite is stable.
+**Broken Jira secrets + `environment: dev1` approval starvation.** This run could not read the In Progress backlog at all (401). Independently, **21/30** recent Playwright conclusions are `action_required` with no jobs executed — mostly `harness/eval-report` PRs waiting on the `dev1` environment gate — so flake detection and generation-gate CI proof stay blind even when the suite is stable. Last-30 greens have dropped to **0**.
 
 ## Next action
 
